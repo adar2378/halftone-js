@@ -1,5 +1,5 @@
 /**
- * @name halftone.js (v2.5.0)
+ * @name halftone.js (v2.6.0)
  * @description The high-performance, physics-driven interaction layer for the modern web.
  * @author saifulislam (2026)
  * @license MIT
@@ -22,6 +22,7 @@ class Halftone {
    * @param {string} [options.interaction='repulse'] - repulse|attract|vortex|shatter|swell|etc.
    * @param {string|HTMLElement} [options.source=null] - Image/Video source
    * @param {string} [options.color='#00f2ff'] - Hex color or 'auto' for sampled colors
+   * @param {string} [options.bgColor='#050510'] - Background color (supports rgba/transparent)
    */
   constructor(options = {}) {
     const container = typeof options.container === 'string' 
@@ -37,16 +38,18 @@ class Halftone {
     }
     container.dataset.htLoaded = 'true';
 
-    // Elements
+    // 1. Initial State & Elements
     this.root = container;
-    this.canvas = document.createElement('canvas');
-    this.ctx = this.canvas.getContext('2d', { alpha: true });
-    this.root.appendChild(this.canvas);
-    
-    this.buffer = document.createElement('canvas');
-    this.bctx = this.buffer.getContext('2d', { willReadFrequently: true });
+    this.dots = [];
+    this.mouse = { x: -9999, y: -9999, px: -9999, py: -9999, vx: 0, vy: 0 };
+    this.dpr = window.devicePixelRatio || 1;
+    this.time = 0;
+    this.sourceReady = false;
+    this.sourceEl = null;
+    this.raf = null;
+    this._sampleWarnShown = false;
 
-    // Config
+    // 2. Build Config (Attributes -> Options -> Defaults)
     this.config = {
       grid: 12,
       shape: 'circle',
@@ -66,14 +69,16 @@ class Halftone {
       ...options
     };
 
-    // State
-    this.dots = [];
-    this.mouse = { x: -9999, y: -9999, px: -9999, py: -9999, vx: 0, vy: 0 };
-    this.dpr = window.devicePixelRatio || 1;
-    this.time = 0;
-    this.sourceReady = false;
-    this.sourceEl = null;
-    this.raf = null;
+    // 3. Optimized Canvas Context
+    const bg = this.config.bgColor.toLowerCase();
+    const needsAlpha = bg === 'transparent' || bg.includes('rgba') || bg.includes('hsla');
+    
+    this.canvas = document.createElement('canvas');
+    this.ctx = this.canvas.getContext('2d', { alpha: needsAlpha });
+    this.root.appendChild(this.canvas);
+    
+    this.buffer = document.createElement('canvas');
+    this.bctx = this.buffer.getContext('2d', { willReadFrequently: true });
 
     // Bindings
     this.resize = this.resize.bind(this);
@@ -174,9 +179,15 @@ class Halftone {
   _discoverAttributes() {
     const ds = this.root.dataset;
     const attrs = {};
+    const validKeys = new Set(['grid', 'shape', 'interaction', 'fit', 'source', 'dotScale', 'spring', 'friction', 'radius', 'strength', 'stretch', 'color', 'bgColor']);
+    
     for (const key in ds) {
       if (key.startsWith('ht')) {
         const prop = key.slice(2).charAt(0).toLowerCase() + key.slice(3);
+        if (!validKeys.has(prop)) {
+            console.warn(`[Halftone] Unknown attribute: data-ht-${prop}`);
+            continue;
+        }
         const val = ds[key];
         attrs[prop] = (val === 'true') ? true : (val === 'false' ? false : (isNaN(val) ? val : parseFloat(val)));
       }
@@ -191,9 +202,8 @@ class Halftone {
     this.root.addEventListener('mouseleave', this._onLeave);
     this.root.addEventListener('touchend', this._onLeave);
 
-    // Watch for Monitor/DPR changes
-    const dprMedia = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
-    dprMedia.addEventListener('change', this.resize);
+    this._dprMedia = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+    this._dprMedia.addEventListener('change', this.resize);
 
     if (this.config.source) {
       this.loadSource().catch(err => console.warn('[Halftone] Source load error:', err));
@@ -287,7 +297,7 @@ class Halftone {
 
   createGrid() {
     this.dots = [];
-    const { grid, dotScale } = this.config;
+    const { grid, dotScale, color } = this.config;
     const spacing = grid * this.dpr;
     const cols = Math.ceil(this.canvas.width / spacing) + 1;
     const rows = Math.ceil(this.canvas.height / spacing) + 1;
@@ -305,7 +315,7 @@ class Halftone {
           sizeScalar: 1, 
           sampleIdx: (Math.floor(y) * bW + Math.floor(x)) * 4,
           rotation: 0,
-          color: null
+          color: color === 'auto' ? null : color
         });
       }
     }
@@ -316,6 +326,8 @@ class Halftone {
     try {
       const sw = this.sourceEl.naturalWidth || this.sourceEl.videoWidth || this.sourceEl.width;
       const sh = this.sourceEl.naturalHeight || this.sourceEl.videoHeight || this.sourceEl.height;
+      if (!sw || !sh) return null;
+
       const sA = sw/sh, cA = this.canvas.width/this.canvas.height;
       let dw = this.canvas.width, dh = this.canvas.height, ox=0, oy=0;
       
@@ -327,7 +339,13 @@ class Halftone {
       
       this.bctx.drawImage(this.sourceEl, ox, oy, dw, dh);
       return this.bctx.getImageData(0, 0, this.buffer.width, this.buffer.height).data;
-    } catch(e) { return null; }
+    } catch(e) { 
+        if (!this._sampleWarnShown) {
+            console.warn('[Halftone] Source sampling failed:', e.message);
+            this._sampleWarnShown = true;
+        }
+        return null; 
+    }
   }
 
   update() {
@@ -391,7 +409,7 @@ class Halftone {
       const size = d.baseSize * d.sizeScalar + (Math.sqrt(d.vx * d.vx + d.vy * d.vy) * 0.1);
       
       if (size < 0.5) continue;
-      if (useAutoColor) ctx.fillStyle = d.color;
+      ctx.fillStyle = d.color || defaultColor;
 
       const v2 = d.vx * d.vx + d.vy * d.vy;
       const hasRotation = Math.abs(d.rotation) > 0.01;
@@ -421,7 +439,7 @@ class Halftone {
     if (type === 'square') { ctx.fillRect(-r, -r, size, size); return; }
     ctx.beginPath();
     if (type === 'diamond') { ctx.moveTo(r, 0); ctx.lineTo(0, r); ctx.lineTo(-r, 0); ctx.lineTo(0, -r); }
-    else if (type === 'triangle') { ctx.moveTo(r, 0); ctx.lineTo(-r, r); ctx.lineTo(-r, -r); }
+    else if (type === 'triangle') { ctx.beginPath(); ctx.moveTo(r, 0); ctx.lineTo(-r, r); ctx.lineTo(-r, -r); }
     else { ctx.arc(0, 0, r, 0, PI2); }
     ctx.fill();
   }
@@ -454,6 +472,10 @@ class Halftone {
     this.root.removeEventListener('mouseleave', this._onLeave);
     this.root.removeEventListener('touchend', this._onLeave);
     
+    if (this._dprMedia) {
+        this._dprMedia.removeEventListener('change', this.resize);
+    }
+
     if (this.sourceEl && this.sourceEl.srcObject) {
       this.sourceEl.srcObject.getTracks().forEach(t => t.stop());
     }
