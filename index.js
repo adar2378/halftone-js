@@ -1,7 +1,7 @@
 /**
- * @name halftone.js (v2.6.1)
+ * @name halftone.js (v1.0.0)
  * @description The high-performance, physics-driven interaction layer for the modern web.
- * @author saifulislam (2026)
+ * @author adar2378 (2026)
  * @license MIT
  */
 
