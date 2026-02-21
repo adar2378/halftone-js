@@ -1,106 +1,202 @@
-# 🌌 halftone.js (v1.0.0)
-**The high-performance, physics-driven interaction layer for the modern web.**
+# halftone.js
 
-halftone.js transforms static grids and media into tactile, living surfaces. Built for **Webflow Designers** and **Elite Creative Developers**, it combines the retro aesthetic of halftone print with 2026-grade spring-mass physics.
+High-performance, physics-driven halftone interaction layer for the web.
 
----
+Transforms static grids and media into tactile, living surfaces. Samples images, videos, or webcam in real-time, maps brightness to dot size, and applies spring-mass physics that reacts to your cursor.
 
-## 🎨 What is Halftone?
-Traditionally, **Halftone** is a reprographic technique that simulates continuous-tone imagery using dots of varying sizes. It’s the "optical illusion" that allowed 20th-century newspapers to print photos using only black ink.
-
-**The Twist:**
-We don't just draw dots; we give them **physical weight**. halftone.js samples your images, videos, or webcam in real-time, maps the brightness to dot size, and then subjects every dot to a spring-mass physics simulation that reacts to your cursor.
+**~3.9 KB gzipped. Zero dependencies.**
 
 ---
 
-## 🚀 Quick Start (Webflow / No-Code)
-Just drop the `index.js` script into your project and use **Custom Attributes** to control the engine.
+## Install
 
-1.  **Target your Container**: Add a Div and give it the attribute `data-ht-element`.
-2.  **Configure**: Add any of the following attributes to tune the feel:
+### npm
+```bash
+npm install halftone-js
+```
 
-### Core Configuration
-| Attribute | Value | Description |
-| :--- | :--- | :--- |
-| `data-ht-grid` | `8` to `30` | Density of the grid. Lower = more detail. |
-| `data-ht-shape` | `circle`, `square`, `diamond`, `triangle` | The geometric primitive used. |
-| `data-ht-source` | `webcam`, `#elementID`, `URL` | The visual data driving the dot sizes. |
-| `data-ht-fit` | `cover`, `contain`, `fill` | How the source media fits the container. |
-| `data-ht-color` | `#00f2ff` | The primary dot color. |
-| `data-ht-bg` | `#050510` | The canvas background color. |
+### CDN
+```html
+<script src="https://unpkg.com/halftone-js/dist/halftone.min.js"></script>
+```
 
-### Physics Configuration
-| Attribute | Value | Description |
-| :--- | :--- | :--- |
-| `data-ht-interaction` | See Modes below | The physical behavior on hover. |
-| `data-ht-radius` | `50` to `500` | The reach of the mouse interaction (px). |
-| `data-ht-strength` | `0.5` to `5.0` | Power of the interaction force. |
-| `data-ht-spring` | `0.01` to `0.3` | Tension: How fast dots snap back home. |
-| `data-ht-friction` | `0.7` to `0.99` | Drag: How long dots vibrate/move. |
-| `data-ht-stretch` | `0` to `1.0` | Anisotropic elongation factor. |
+### Direct
+Download `dist/halftone.min.js` and include it with a `<script>` tag.
 
 ---
 
-## 🌊 Built-in Interaction Modes
-*   **`repulse`**: (Default) Pushes dots away from the cursor.
-*   **`attract`**: Liquid gravity. Dots cluster toward the mouse.
-*   **`vortex`**: Swirling energy. Dots orbit the cursor.
-*   **`magnetic`**: The "Watcher" effect. Dots rotate to face the cursor.
-*   **`gravity`**: Dots "fall" towards the bottom of the radius.
-*   **`drift`**: Dots lazily orbit the mouse center.
-*   **`twist`**: Mechanical axis-spinning around the mouse.
-*   **`float`**: Anti-gravity effect. Dots drift upward when touched.
-*   **`frenzy`**: High-frequency electric jitter.
-*   **`warp`**: Elastic stretching along the mouse path.
-*   **`bounce`**: Interaction-triggered vertical oscillation.
-*   **`shatter`**: High-energy burst on fast contact.
-*   **`ripple`**: Sci-fi wave pulses.
-*   **`swell`**: Localized magnification/inflation.
-*   **`glitch`**: Digital position noise.
-*   **`wind`**: Pushes dots in the direction of mouse movement.
-*   **`pulse`**: Rhythmic distance-based breathing.
+## Quick Start
 
----
+### HTML (No-Code / Webflow)
 
-## 🛠 Advanced API (Pro-Code)
+Add `data-ht-element` to any container. That's it — halftone.js auto-initializes.
 
-### Initialization
-```javascript
-import Halftone from './halftone.js';
+```html
+<div data-ht-element style="width: 100%; height: 400px;"></div>
+<script src="https://unpkg.com/halftone-js/dist/halftone.min.js"></script>
+```
+
+Customize with data attributes:
+
+```html
+<div
+  data-ht-element
+  data-ht-grid="10"
+  data-ht-shape="diamond"
+  data-ht-interaction="vortex"
+  data-ht-color="#ff6600"
+  data-ht-bg-color="#0a0a1a"
+  data-ht-strength="2.5"
+  style="width: 100%; height: 400px;"
+></div>
+```
+
+### JavaScript
+
+```js
+import Halftone from 'halftone-js';
 
 const fx = new Halftone({
-  container: '#hero-canvas',
-  grid: 12,
+  container: '#hero',
+  grid: 10,
   interaction: 'vortex',
+  color: '#ff6600',
   strength: 2.5
 });
 ```
 
-### 🔌 Registry & Plugin System
-You can register custom interactions globally so they can be used via `data-ht-interaction`.
+---
 
-```javascript
-import Halftone from './halftone.js';
+## Options
 
-// 1. Register a new behavior
-Halftone.register('my-cool-effect', (dot, props) => {
-    const { angle, force, strength, dpr } = props;
-    dot.vx += Math.cos(angle) * force * strength * dpr;
+### Appearance
+
+| Option / Attribute | Default | Description |
+| :--- | :--- | :--- |
+| `grid` / `data-ht-grid` | `12` | Grid spacing (px). Lower = more dots. |
+| `shape` / `data-ht-shape` | `'circle'` | `circle`, `square`, `diamond`, `triangle` |
+| `color` / `data-ht-color` | `'#00f2ff'` | Dot color. Use `'auto'` to sample colors from source. |
+| `bgColor` / `data-ht-bg-color` | `'#050510'` | Background. Supports `rgba()`, `transparent`. |
+| `dotScale` / `data-ht-dot-scale` | `0.8` | Dot size multiplier (0-1). |
+| `stretch` / `data-ht-stretch` | `0.2` | Velocity-based dot stretching (0-1). |
+
+### Media Source
+
+| Option / Attribute | Default | Description |
+| :--- | :--- | :--- |
+| `source` / `data-ht-source` | `null` | `'webcam'`, image/video URL, CSS selector, or HTMLElement. |
+| `fit` / `data-ht-fit` | `'cover'` | `cover` or `contain`. |
+
+### Physics
+
+| Option / Attribute | Default | Description |
+| :--- | :--- | :--- |
+| `interaction` / `data-ht-interaction` | `'repulse'` | Interaction mode. See list below. |
+| `radius` / `data-ht-radius` | `120` | Mouse interaction radius (px). |
+| `strength` / `data-ht-strength` | `1.8` | Interaction force multiplier. |
+| `spring` / `data-ht-spring` | `0.1` | How fast dots snap back (0.01-0.3). |
+| `friction` / `data-ht-friction` | `0.8` | Motion damping (0.7-0.99). |
+
+### Callbacks
+
+| Option | Description |
+| :--- | :--- |
+| `onInteract` | Custom interaction function. Overrides the named interaction. `(dot, props) => {}` |
+
+---
+
+## Interaction Modes
+
+| Mode | Effect |
+| :--- | :--- |
+| `repulse` | (Default) Pushes dots away from cursor |
+| `attract` | Dots cluster toward the mouse |
+| `vortex` | Dots orbit the cursor |
+| `magnetic` | Dots rotate to face the cursor |
+| `swell` | Localized size inflation |
+| `ripple` | Wave pulses radiating outward |
+| `shatter` | Explosive burst on fast mouse movement |
+| `glitch` | Random position noise |
+| `wind` | Pushes dots in mouse movement direction |
+| `pulse` | Rhythmic distance-based breathing |
+| `twist` | Rotational spinning |
+| `float` | Anti-gravity — dots drift upward |
+| `frenzy` | High-frequency jitter |
+| `warp` | Elastic stretching along mouse path |
+| `bounce` | Vertical oscillation |
+| `gravity` | Dots fall downward within radius |
+| `drift` | Slow orbit around mouse center |
+
+---
+
+## Custom Plugins
+
+Register your own interaction mode:
+
+```js
+import Halftone from 'halftone-js';
+
+Halftone.register('my-effect', (dot, { angle, force, strength, dpr }) => {
+  dot.vx += Math.cos(angle) * force * strength * dpr;
+  dot.vy += Math.sin(angle) * force * strength * dpr;
 });
 
-// 2. Use it via JS or Data Attributes
-const fx = new Halftone({
-  container: '#hero',
-  interaction: 'my-cool-effect'
-});
+// Use via JS
+new Halftone({ container: '#el', interaction: 'my-effect' });
+
+// Or via HTML
+// <div data-ht-element data-ht-interaction="my-effect"></div>
+```
+
+The callback receives:
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `dot.x`, `dot.y` | number | Current position |
+| `dot.vx`, `dot.vy` | number | Velocity (write to this) |
+| `dot.rotation` | number | Current rotation angle |
+| `dot.sizeScalar` | number | Size multiplier (resets each frame) |
+| `props.dist` | number | Distance from mouse |
+| `props.angle` | number | Angle to mouse |
+| `props.force` | number | 0-1 normalized force (1 = at mouse, 0 = at radius edge) |
+| `props.strength` | number | Config strength value |
+| `props.dpr` | number | Device pixel ratio |
+| `props.mouse` | object | `{ x, y, vx, vy }` — mouse state |
+| `props.time` | number | Frame counter |
+
+---
+
+## API
+
+```js
+const fx = new Halftone({ container: '#el' });
+
+fx.config       // Current configuration
+fx.dots         // Array of all dot objects
+fx.canvas       // The canvas element
+fx.root         // The container element
+
+fx.resize()     // Recalculate dimensions and rebuild grid
+fx.createGrid() // Rebuild the dot grid
+fx.destroy()    // Stop animation, remove canvas, clean up all resources
 ```
 
 ---
 
-## ⚡ Performance & Lifecycle
-*   **Self-Cleaning**: The engine automatically detects when its container is removed from the DOM and shuts down its loops and listeners to prevent memory leaks.
-*   **O(1) Sampling**: Optimized for 2026 browsers using pre-computed pixel mapping and `willReadFrequently` canvas optimization.
+## Lifecycle
+
+- **Auto-init**: Elements with `data-ht-element` are initialized on `DOMContentLoaded`.
+- **Auto-cleanup**: If the container is removed from the DOM, the engine shuts itself down — no manual `destroy()` needed.
+- **Webcam cleanup**: Webcam streams are properly stopped on `destroy()`.
 
 ---
 
-**Built with "Tactile Crunch" by saifulislam (2026).**
+## Browser Support
+
+Works in all modern browsers that support Canvas 2D and ES2020.
+
+---
+
+## License
+
+[MIT](LICENSE)

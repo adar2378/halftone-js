@@ -1,0 +1,52 @@
+{
+  "name": "halftone-js",
+  "version": "1.0.0",
+  "description": "High-performance, physics-driven halftone interaction layer for the modern web",
+  "author": "adar2378",
+  "license": "MIT",
+  "main": "dist/halftone.min.js",
+  "module": "dist/halftone.esm.js",
+  "types": "halftone.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/halftone.esm.js",
+      "require": "./dist/halftone.cjs.js",
+      "default": "./dist/halftone.min.js"
+    }
+  },
+  "files": [
+    "dist/",
+    "index.js",
+    "halftone.d.ts",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "node build.js",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  },
+  "keywords": [
+    "halftone",
+    "canvas",
+    "physics",
+    "interaction",
+    "particles",
+    "dots",
+    "webflow",
+    "creative-coding",
+    "generative",
+    "webcam"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adar2378/halftone-js.git"
+  },
+  "homepage": "https://github.com/adar2378/halftone-js",
+  "bugs": {
+    "url": "https://github.com/adar2378/halftone-js/issues"
+  }
+}
