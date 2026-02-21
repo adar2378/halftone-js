@@ -1,5 +1,5 @@
 /**
- * @name halftone.js (v2.6.0)
+ * @name halftone.js (v2.6.1)
  * @description The high-performance, physics-driven interaction layer for the modern web.
  * @author saifulislam (2026)
  * @license MIT
@@ -429,6 +429,7 @@ class Halftone {
         this._drawShape(ctx, config.shape, size);
         ctx.restore();
       } else {
+        // High-performance direct draw path
         this._drawShapeDirect(ctx, config.shape, d.x, d.y, size);
       }
     }
@@ -439,7 +440,7 @@ class Halftone {
     if (type === 'square') { ctx.fillRect(-r, -r, size, size); return; }
     ctx.beginPath();
     if (type === 'diamond') { ctx.moveTo(r, 0); ctx.lineTo(0, r); ctx.lineTo(-r, 0); ctx.lineTo(0, -r); }
-    else if (type === 'triangle') { ctx.beginPath(); ctx.moveTo(r, 0); ctx.lineTo(-r, r); ctx.lineTo(-r, -r); }
+    else if (type === 'triangle') { ctx.moveTo(r, 0); ctx.lineTo(-r, r); ctx.lineTo(-r, -r); }
     else { ctx.arc(0, 0, r, 0, PI2); }
     ctx.fill();
   }
