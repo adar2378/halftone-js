@@ -14,15 +14,41 @@ const LUMA_G = 0.587;
 const LUMA_B = 0.114;
 
 class Halftone {
+  static defaults = {
+    grid: 12,
+    gap: 0,
+    shape: 'circle',
+    interaction: 'repulse',
+    fit: 'cover',
+    source: null,
+    dotScale: 1,
+    spring: 0.1,
+    friction: 0.8,
+    radius: 120,
+    strength: 1.8,
+    stretch: 0.2,
+    color: '#E85002',
+    bgColor: '#050510',
+    onInteract: null
+  };
+
+  /** Register a custom interaction effect globally */
+  static register(name, fn) {
+    Halftone.interactions[name] = fn;
+  }
+
+  /** Centralized initialization for multiple panels */
+  static init(configMap = {}) {
+    for (const selector in configMap) {
+      document.querySelectorAll(selector).forEach(el => {
+        new Halftone({ container: el, ...configMap[selector] });
+      });
+    }
+  }
+
   /**
    * @param {Object} options 
    * @param {HTMLElement|string} options.container - Target element or selector
-   * @param {number} [options.grid=12] - Grid spacing
-   * @param {string} [options.shape='circle'] - circle|square|diamond|triangle
-   * @param {string} [options.interaction='repulse'] - repulse|attract|vortex|shatter|swell|etc.
-   * @param {string|HTMLElement} [options.source=null] - Image/Video source
-   * @param {string} [options.color='#00f2ff'] - Hex color or 'auto' for sampled colors
-   * @param {string} [options.bgColor='#050510'] - Background color (supports rgba/transparent)
    */
   constructor(options = {}) {
     const container = typeof options.container === 'string' 
@@ -33,45 +59,35 @@ class Halftone {
       throw new Error('[Halftone] Initialization failed: Container not found.');
     }
 
-    if (container.dataset.htLoaded) {
-      return;
-    }
-    container.dataset.htLoaded = 'true';
-
-    // 1. Initial State & Elements
-    this.root = container;
-    this.dots = [];
-    this.mouse = { x: -9999, y: -9999, px: -9999, py: -9999, vx: 0, vy: 0 };
-    this.dpr = window.devicePixelRatio || 1;
-    this.time = 0;
-    this.sourceReady = false;
-    this.sourceEl = null;
-    this.raf = null;
-    this._sampleWarnShown = false;
-
-    // 2. Build Config (Attributes -> Options -> Defaults)
-    this.config = {
-      grid: 12,
-      shape: 'circle',
-      interaction: 'repulse',
-      fit: 'cover',
-      source: null,
-      dotScale: 0.8,
-      spring: 0.1,
-      friction: 0.8,
-      radius: 120,
-      strength: 1.8,
-      stretch: 0.2,
-      color: '#00f2ff',
-      bgColor: '#050510',
-      onInteract: null,
-      ...this._discoverAttributes(),
-      ...options
-    };
-
-    // 3. Optimized Canvas Context
-    const bg = this.config.bgColor.toLowerCase();
-    const needsAlpha = bg === 'transparent' || bg.includes('rgba') || bg.includes('hsla');
+        this.root = container;
+        this.dots = [];
+        this.mouse = { x: -9999, y: -9999, px: -9999, py: -9999, vx: 0, vy: 0 };
+        this.dpr = window.devicePixelRatio || 1;
+        this.time = 0;
+        this.sourceReady = false;
+        this.sourceEl = null;
+        this.raf = null;
+        this._sampleWarnShown = false;
+    
+        // 2. Build Config
+        this.config = {
+          ...Halftone.defaults,
+          ...this._discoverAttributes(),
+          ...options
+        };
+    
+        // Halftone Specific Defaults
+        if (this.config.minScale === undefined) this.config.minScale = 0;
+        if (this.config.contrast === undefined) this.config.contrast = 2;
+        if (this.config.brightness === undefined) this.config.brightness = 1;
+    
+        // Early return if already loaded, but we keep the config for reference
+        if (container.dataset.htLoaded) return;
+        container.dataset.htLoaded = 'true';
+    
+        // 3. Optimized Canvas Context
+        const bg = this.config.bgColor.toLowerCase();
+        const needsAlpha = bg === 'transparent' || bg.includes('rgba') || bg.includes('hsla');
     
     this.canvas = document.createElement('canvas');
     this.ctx = this.canvas.getContext('2d', { alpha: needsAlpha });
@@ -170,11 +186,6 @@ class Halftone {
       dot.vy += Math.sin(angle + time * 0.02) * f;
     }
   };
-
-  /** Register a custom interaction effect globally */
-  static register(name, fn) {
-    Halftone.interactions[name] = fn;
-  }
 
   _discoverAttributes() {
     const ds = this.root.dataset;
@@ -302,18 +313,25 @@ class Halftone {
     const cols = Math.ceil(this.canvas.width / spacing) + 1;
     const rows = Math.ceil(this.canvas.height / spacing) + 1;
     const bW = this.buffer.width;
+    const bH = this.buffer.height;
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        const x = c * spacing;
-        const y = r * spacing;
+        // Center dots in the grid cell
+        const x = c * spacing + spacing / 2;
+        const y = r * spacing + spacing / 2;
+        
+        // Clamp sampling coordinates to buffer bounds
+        const sx = Math.max(0, Math.min(bW - 1, Math.floor(x)));
+        const sy = Math.max(0, Math.min(bH - 1, Math.floor(y)));
+
         this.dots.push({
           homeX: x, homeY: y, 
           x: x, y: y, 
           vx: 0, vy: 0, 
-          baseSize: (spacing / 2) * dotScale,
+          baseSize: 0,
           sizeScalar: 1, 
-          sampleIdx: (Math.floor(y) * bW + Math.floor(x)) * 4,
+          sampleIdx: (sy * bW + sx) * 4,
           rotation: 0,
           color: color === 'auto' ? null : color
         });
@@ -337,6 +355,7 @@ class Halftone {
       ox = (this.canvas.width - dw) / 2; 
       oy = (this.canvas.height - dh) / 2;
       
+      this.bctx.clearRect(0, 0, this.buffer.width, this.buffer.height);
       this.bctx.drawImage(this.sourceEl, ox, oy, dw, dh);
       return this.bctx.getImageData(0, 0, this.buffer.width, this.buffer.height).data;
     } catch(e) { 
@@ -351,9 +370,10 @@ class Halftone {
   update() {
     this.time++;
     const data = this.sample();
-    const { spring, friction, radius, strength, interaction, grid, onInteract, color } = this.config;
+    const { spring, friction, radius, strength, interaction, grid, gap, onInteract, color, dotScale } = this.config;
     const radDpr = radius * this.dpr;
     const gDpr = grid * this.dpr;
+    const gapDpr = (gap || 0) * this.dpr;
     const useAutoColor = color === 'auto';
     
     const interactFn = onInteract || Halftone.interactions[interaction] || Halftone.interactions.repulse;
@@ -362,13 +382,36 @@ class Halftone {
       const d = this.dots[i];
       d.sizeScalar = 1; 
 
+      // 1. Calculate max possible size for this cell (accounting for gap)
+      // For squares, max size is gDpr - gapDpr. 
+      // For circles to cover corners when gap=0, they need gDpr * 1.414.
+      const isCircle = this.config.shape === 'circle' || !this.config.shape;
+      const coverageMultiplier = (isCircle && (gap === 0)) ? 1.5 : 1.0;
+      const baseAvailable = gDpr - gapDpr;
+      const maxAvailable = baseAvailable * dotScale * coverageMultiplier;
+
       if (data && d.sampleIdx < data.length) {
         const r = data[d.sampleIdx];
         const g = data[d.sampleIdx + 1];
         const b = data[d.sampleIdx + 2];
         const luma = (r * LUMA_R + g * LUMA_G + b * LUMA_B) / 255;
-        d.baseSize = gDpr * 0.9 * luma;
+        
+        // Advanced Halftone Scale Calculation
+        const { contrast, brightness, minScale } = this.config;
+        
+        // 2. Brightness multiplier (boost visibility)
+        let intensity = luma * (brightness || 1.0);
+        intensity = Math.max(0, Math.min(1, intensity));
+        
+        // 3. Apply contrast curve (power)
+        const scale = Math.pow(intensity, contrast || 1.8);
+        
+        // 4. Combine with minScale
+        d.baseSize = maxAvailable * (minScale + scale * (1 - minScale)); 
+        
         if (useAutoColor) d.color = `rgb(${r},${g},${b})`;
+      } else {
+        d.baseSize = maxAvailable;
       }
 
       const dx = this.mouse.x - d.x;
