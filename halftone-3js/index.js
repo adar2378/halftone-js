@@ -1,17 +1,20 @@
 import * as THREE from 'three';
 
+/**
+ * Halftone3D - High performance, GPU-accelerated halftone interaction layer.
+ * Powered by Three.js InstancedMesh & GLSL Shaders.
+ */
 export default class Halftone3D {
     static defaults = {
-        container: null,
-        grid: 50, // Higher default for WebGL
+        grid: 60,
         gap: 0,
-        shape: 'circle', // circle, square
+        shape: 'circle', // circle, square, diamond, triangle
         color: '#E85002',
         bgColor: '#050510',
-        source: null, // Image URL, Video URL, or 'webcam'
-        interaction: 'repulse', // repulse, attract, none
-        radius: 0.2, // Interaction radius (normalized 0-1)
-        strength: 0.5, // Interaction strength
+        source: null,
+        interaction: 'repulse', // none, repulse, attract, vortex, ripple
+        radius: 0.3,
+        strength: 0.5,
         dotScale: 1.0,
         contrast: 2.0,
         brightness: 1.0,
@@ -25,44 +28,99 @@ export default class Halftone3D {
 
         if (!this.container) throw new Error('Halftone3D: Container not found');
 
-        this.width = this.container.clientWidth;
-        this.height = this.container.clientHeight;
-        this.mouse = new THREE.Vector2(-999, -999);
+        this.width = 0;
+        this.height = 0;
+        this.mouse = new THREE.Vector2(0, 0);
         this.time = 0;
+        this._init = false;
 
-        this.init();
-    }
-
-    init() {
-        // 1. Scene & Camera
-        this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(this.config.bgColor);
-
-        const aspect = this.width / this.height;
-        this.camera = new THREE.OrthographicCamera(-1, 1, 1/aspect, -1/aspect, 0.1, 1000);
-        this.camera.position.z = 5;
-
-        // 2. Renderer
-        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        this.renderer.setSize(this.width, this.height);
-        this.renderer.setPixelRatio(window.devicePixelRatio);
-        this.container.appendChild(this.renderer.domElement);
-
-        // 3. Defaults & Grid
-        this.defaultTexture = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1, THREE.RGBAFormat);
-        this.defaultTexture.needsUpdate = true;
+        this._setupScene();
+        this._setupEvents();
+        this.onResize(); // Initial sizing
+        this._setupGrid();
         
-        this.createGrid();
-
         if (this.config.source) this.loadSource(this.config.source);
-
-        window.addEventListener('resize', this.onResize.bind(this));
-        window.addEventListener('mousemove', this.onMouseMove.bind(this));
         
+        this._init = true;
         this.animate();
     }
 
-    createGrid() {
+    /**
+     * Unified method to update configuration at runtime.
+     * Handles both internal state and GPU uniform updates.
+     */
+    updateConfig(key, value) {
+        this.config[key] = value;
+        if (!this._init) return;
+
+        // Properties that require a full grid rebuild
+        if (['grid', 'shape', 'gap'].includes(key)) {
+            this._setupGrid();
+            return;
+        }
+
+        // Properties that map directly to uniforms
+        const uniformMap = {
+            'color': () => this.uniforms.uColor.value.set(value),
+            'dotScale': () => this.uniforms.uDotScale.value = value,
+            'contrast': () => this.uniforms.uContrast.value = value,
+            'brightness': () => this.uniforms.uBrightness.value = value,
+            'radius': () => this.uniforms.uRadius.value = value,
+            'strength': () => this.uniforms.uStrength.value = value,
+            'interaction': () => this.uniforms.uInteraction.value = this._getInteractionId(value)
+        };
+
+        if (uniformMap[key]) {
+            uniformMap[key]();
+            if (key === 'color') this.uniforms.uAutoColor.value = (value === 'auto' ? 1 : 0);
+        }
+    }
+
+    async loadSource(src) {
+        if (!src) return;
+        if (src === 'webcam') return this._setupWebcam();
+
+        const isVideo = src.match(/\.(mp4|webm)$/i) || src.startsWith('blob:');
+        if (isVideo) {
+            const video = document.createElement('video');
+            video.src = src; video.crossOrigin = "anonymous";
+            video.loop = true; video.muted = true; video.playsInline = true;
+            await video.play();
+            this.uniforms.uTexture.value = new THREE.VideoTexture(video);
+        } else {
+            new THREE.TextureLoader().load(src, (tex) => {
+                tex.minFilter = THREE.LinearFilter;
+                this.uniforms.uTexture.value = tex;
+            });
+        }
+    }
+
+    _setupScene() {
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(this.config.bgColor);
+
+        this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1000);
+        this.camera.position.z = 5;
+
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        
+        // Polite styling
+        this.renderer.domElement.style.position = 'absolute';
+        this.renderer.domElement.style.inset = '0';
+        this.renderer.domElement.style.pointerEvents = 'none';
+        
+        if (getComputedStyle(this.container).position === 'static') {
+            this.container.style.position = 'relative';
+        }
+        this.container.style.overflow = 'hidden';
+        this.container.appendChild(this.renderer.domElement);
+
+        this.defaultTexture = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1, THREE.RGBAFormat);
+        this.defaultTexture.needsUpdate = true;
+    }
+
+    _setupGrid() {
         if (this.mesh) {
             this.scene.remove(this.mesh);
             this.mesh.geometry.dispose();
@@ -74,96 +132,34 @@ export default class Halftone3D {
         const rows = Math.ceil(cols / aspect);
         const count = cols * rows;
 
-        const geometry = this.config.shape === 'square' 
-            ? new THREE.PlaneGeometry(1, 1) 
-            : new THREE.CircleGeometry(0.5, 32);
-
-        this.uniforms = {
-            uTime: { value: 0 },
-            uTexture: { value: this.defaultTexture },
-            uMouse: { value: new THREE.Vector2(0, 0) },
-            uColor: { value: new THREE.Color(this.config.color) },
-            uGrid: { value: new THREE.Vector2(cols, rows) },
-            uDotScale: { value: this.config.dotScale },
-            uContrast: { value: this.config.contrast },
-            uBrightness: { value: this.config.brightness },
-            uRadius: { value: this.config.radius },
-            uStrength: { value: this.config.strength },
-            uInteraction: { value: this.getInteractionType() }
-        };
+        const geometry = this._getGeometry();
+        this.uniforms = this._getUniforms(cols, rows);
 
         const material = new THREE.ShaderMaterial({
             uniforms: this.uniforms,
-            vertexShader: `
-                uniform sampler2D uTexture;
-                uniform float uBrightness;
-                uniform float uContrast;
-                uniform vec2 uMouse;
-                uniform float uRadius;
-                uniform float uStrength;
-                uniform int uInteraction;
-                uniform vec2 uGrid;
-                uniform float uDotScale;
-
-                attribute vec3 instancePos;
-                attribute vec2 instanceUV;
-                varying float vScale;
-
-                void main() {
-                    vec4 texColor = texture2D(uTexture, instanceUV);
-                    float luma = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
-                    
-                    float intensity = clamp(luma * uBrightness, 0.0, 1.0);
-                    float scale = pow(intensity, uContrast);
-                    vScale = scale;
-
-                    float d = distance(instancePos.xy, uMouse);
-                    vec2 displacement = vec2(0.0);
-
-                    if (d < uRadius) {
-                        float force = (1.0 - d / uRadius) * uStrength;
-                        vec2 dir = normalize(instancePos.xy - uMouse);
-                        if (uInteraction == 1) displacement = dir * force * 0.1;
-                        else if (uInteraction == 2) displacement = -dir * force * 0.1;
-                    }
-
-                    float cellSize = 2.0 / uGrid.x;
-                    float finalSize = cellSize * uDotScale * (0.1 + scale * 0.9);
-
-                    vec3 pos = position * finalSize + instancePos + vec3(displacement, 0.0);
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-                }
-            `,
-            fragmentShader: `
-                uniform vec3 uColor;
-                void main() {
-                    gl_FragColor = vec4(uColor, 1.0);
-                }
-            `,
+            vertexShader: this._getVertexShader(),
+            fragmentShader: this._getFragmentShader(),
             transparent: true
         });
 
         this.mesh = new THREE.InstancedMesh(geometry, material, count);
-        this.mesh.frustumCulled = false; // Important for custom shaders
+        this.mesh.frustumCulled = false;
         
         const instancePos = new Float32Array(count * 3);
         const instanceUV = new Float32Array(count * 2);
         
-        let i = 0;
         const stepX = 2.0 / cols;
         const stepY = (2.0 / aspect) / rows;
         const startY = (1.0 / aspect) - stepY/2;
         const startX = -1.0 + stepX/2;
 
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-                instancePos[i * 3] = startX + c * stepX;
-                instancePos[i * 3 + 1] = startY - r * stepY;
-                instancePos[i * 3 + 2] = 0;
-                instanceUV[i * 2] = c / (cols - 1);
-                instanceUV[i * 2 + 1] = 1.0 - (r / (rows - 1));
-                i++;
-            }
+        for (let i = 0; i < count; i++) {
+            const r = Math.floor(i / cols);
+            const c = i % cols;
+            instancePos[i * 3] = startX + c * stepX;
+            instancePos[i * 3 + 1] = startY - r * stepY;
+            instanceUV[i * 2] = c / (cols - 1 || 1);
+            instanceUV[i * 2 + 1] = 1.0 - (r / (rows - 1 || 1));
         }
 
         this.mesh.geometry.setAttribute('instancePos', new THREE.InstancedBufferAttribute(instancePos, 3));
@@ -171,93 +167,159 @@ export default class Halftone3D {
         this.scene.add(this.mesh);
     }
 
-    getInteractionType() {
-        if (this.config.interaction === 'repulse') return 1;
-        if (this.config.interaction === 'attract') return 2;
-        return 0;
+    _getGeometry() {
+        switch(this.config.shape) {
+            case 'square': return new THREE.PlaneGeometry(1, 1);
+            case 'diamond': return new THREE.PlaneGeometry(1, 1);
+            case 'triangle': return new THREE.CircleGeometry(0.5, 3);
+            default: return new THREE.CircleGeometry(0.5, 32);
+        }
     }
 
-    loadSource(src) {
-        const loader = new THREE.TextureLoader();
-        
-        if (src === 'webcam') {
-            this.setupWebcam();
-        } else if (src.match(/\.(mp4|webm)$/i)) {
-            // Video
+    _getUniforms(cols, rows) {
+        return {
+            uTime: { value: 0 },
+            uTexture: { value: this.uniforms?.uTexture?.value || this.defaultTexture },
+            uMouse: { value: this.mouse },
+            uColor: { value: new THREE.Color(this.config.color === 'auto' ? '#ffffff' : this.config.color) },
+            uGrid: { value: new THREE.Vector2(cols, rows) },
+            uDotScale: { value: this.config.dotScale },
+            uContrast: { value: this.config.contrast },
+            uBrightness: { value: this.config.brightness },
+            uRadius: { value: this.config.radius },
+            uStrength: { value: this.config.strength },
+            uInteraction: { value: this._getInteractionId(this.config.interaction) },
+            uAutoColor: { value: this.config.color === 'auto' ? 1 : 0 },
+            uGap: { value: this.config.gap }
+        };
+    }
+
+    _getInteractionId(type) {
+        return { 'none': 0, 'repulse': 1, 'attract': 2, 'vortex': 3, 'ripple': 4 }[type] || 0;
+    }
+
+    _getVertexShader() {
+        return `
+            uniform sampler2D uTexture;
+            uniform float uBrightness, uContrast, uRadius, uStrength, uDotScale, uTime, uGap;
+            uniform vec2 uMouse, uGrid;
+            uniform int uInteraction;
+            attribute vec3 instancePos;
+            attribute vec2 instanceUV;
+            varying float vScale;
+            varying vec3 vColor;
+
+            void main() {
+                vec4 texColor = texture2D(uTexture, instanceUV);
+                vColor = texColor.rgb;
+                float luma = dot(vColor, vec3(0.299, 0.587, 0.114));
+                float scale = pow(clamp(luma * uBrightness, 0.0, 1.0), uContrast);
+                vScale = scale;
+
+                float d = distance(instancePos.xy, uMouse);
+                vec2 disp = vec2(0.0);
+                if (d < uRadius) {
+                    float f = (1.0 - d / uRadius) * uStrength;
+                    vec2 dir = normalize(instancePos.xy - uMouse);
+                    if (uInteraction == 1) disp = dir * f * 0.15;
+                    else if (uInteraction == 2) disp = -dir * f * 0.15;
+                    else if (uInteraction == 3) disp = vec2(-dir.y, dir.x) * f * 0.2;
+                    else if (uInteraction == 4) disp = dir * (sin(d * 20.0 - uTime * 5.0) * 0.5 + 0.5) * f * 0.1;
+                }
+
+                float cellSize = (2.0 / uGrid.x) - (uGap * 0.01);
+                float finalSize = cellSize * uDotScale * (0.05 + scale * 0.95);
+                vec3 pos = position * finalSize;
+                ${this.config.shape === 'diamond' ? 'float a = 0.785; pos.xy = mat2(cos(a),-sin(a),sin(a),cos(a)) * pos.xy;' : ''}
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos + instancePos + vec3(disp, 0.0), 1.0);
+            }
+        `;
+    }
+
+    _getFragmentShader() {
+        return `
+            uniform vec3 uColor;
+            uniform int uAutoColor;
+            varying float vScale;
+            varying vec3 vColor;
+            void main() {
+                if (vScale < 0.01) discard;
+                gl_FragColor = vec4(uAutoColor == 1 ? vColor : uColor, 1.0);
+            }
+        `;
+    }
+
+    _setupWebcam() {
+        navigator.mediaDevices?.getUserMedia({ video: true }).then(stream => {
             const video = document.createElement('video');
-            video.src = src;
-            video.crossOrigin = "anonymous";
-            video.loop = true;
-            video.muted = true;
-            video.play();
-            const tex = new THREE.VideoTexture(video);
-            this.uniforms.uTexture.value = tex;
-        } else {
-            // Image
-            loader.load(src, (tex) => {
-                this.uniforms.uTexture.value = tex;
-            });
-        }
+            video.srcObject = stream; video.play();
+            this.uniforms.uTexture.value = new THREE.VideoTexture(video);
+        });
     }
 
-    setupWebcam() {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            const constraints = { video: { width: 1280, height: 720, facingMode: 'user' } };
-            navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
-                const video = document.createElement('video');
-                video.srcObject = stream;
-                video.play();
-                const tex = new THREE.VideoTexture(video);
-                this.uniforms.uTexture.value = tex;
-            }).catch((e) => console.error('Webcam error:', e));
-        }
+    _setupEvents() {
+        this._resizeHandler = this.onResize.bind(this);
+        this._mouseHandler = this.onMouseMove.bind(this);
+        window.addEventListener('resize', this._resizeHandler);
+        window.addEventListener('mousemove', this._mouseHandler);
     }
 
     onResize() {
         this.width = this.container.clientWidth;
         this.height = this.container.clientHeight;
-        
         const aspect = this.width / this.height;
-        
-        // Update Camera
-        this.camera.left = -1;
-        this.camera.right = 1;
-        this.camera.top = 1 / aspect;
-        this.camera.bottom = -1 / aspect;
+        this.camera.top = 1/aspect; this.camera.bottom = -1/aspect;
         this.camera.updateProjectionMatrix();
-
         this.renderer.setSize(this.width, this.height);
-        if (this.uniforms && this.uniforms.uResolution) {
-            this.uniforms.uResolution.value.set(this.width, this.height);
-        }
-        
-        // Re-create grid to match new aspect ratio
-        this.createGrid();
+        if (this._init) this._setupGrid();
     }
 
     onMouseMove(e) {
-        // Normalize mouse to -1 to 1
-        // We need coordinates relative to the container center
-        const rect = this.container.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        
-        // Map to -1 to 1 range
-        const nx = (x / rect.width) * 2 - 1;
-        // Map y. Top is positive in 3D world (usually), but screen y is positive down.
-        // Our camera top is > 0.
-        const aspect = this.width / this.height;
-        const ny = -((y / rect.height) * (2/aspect) - (1/aspect)); 
-
+        const r = this.container.getBoundingClientRect();
+        const nx = ((e.clientX - r.left) / r.width) * 2 - 1;
+        const ny = -(((e.clientY - r.top) / r.height) * (2/(this.width/this.height)) - (1/(this.width/this.height))); 
         this.mouse.set(nx, ny);
     }
 
     animate() {
+        this._raf = requestAnimationFrame(this.animate.bind(this));
         this.time += 0.05;
-        this.uniforms.uTime.value = this.time;
-        this.uniforms.uMouse.value.lerp(this.mouse, 0.1); // Smooth mouse
-        
+        if (this.uniforms) {
+            this.uniforms.uTime.value = this.time;
+            this.uniforms.uMouse.value.lerp(this.mouse, 0.1);
+        }
         this.renderer.render(this.scene, this.camera);
-        requestAnimationFrame(this.animate.bind(this));
     }
+
+    destroy() {
+        cancelAnimationFrame(this._raf);
+        window.removeEventListener('resize', this._resizeHandler);
+        window.removeEventListener('mousemove', this._mouseHandler);
+        this.renderer.dispose();
+        this.mesh.geometry.dispose();
+        this.mesh.material.dispose();
+        this.container.removeChild(this.renderer.domElement);
+    }
+}
+
+// Auto-init for data attributes
+if (typeof window !== 'undefined') {
+    window.Halftone3D = Halftone3D;
+    const init = () => {
+        document.querySelectorAll('[data-ht-element]').forEach(el => {
+            if (el.dataset.htEngine === '3d') {
+                const options = {};
+                for (const key in el.dataset) {
+                    if (key.startsWith('ht') && key !== 'htElement' && key !== 'htEngine') {
+                        const prop = key.slice(2).charAt(0).toLowerCase() + key.slice(3);
+                        const val = el.dataset[key];
+                        options[prop] = isNaN(val) ? val : parseFloat(val);
+                    }
+                }
+                el.__halftone = new Halftone3D({ container: el, ...options });
+            }
+        });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
 }
