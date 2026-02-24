@@ -7,7 +7,7 @@
     <style>
         body { margin: 0; background: #050510; color: #fff; font-family: 'Inter', system-ui, sans-serif; overflow: hidden; }
         .ui-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 100; display: flex; flex-direction: column; justify-content: space-between; padding: 30px; }
-        .top-left h1 { margin: 0; font-size: 32px; font-weight: 900; letter-spacing: -1px; color: #00f2ff; text-transform: uppercase; }
+        .top-left h1 { margin: 0; font-size: 32px; font-weight: 900; letter-spacing: -1px; color: #E85002; text-transform: uppercase; }
         .top-left p { margin: 5px 0 0; font-size: 14px; opacity: 0.6; }
         
         .controls { position: absolute; top: 30px; right: 30px; z-index: 1000; width: 280px; background: rgba(10, 10, 30, 0.8); backdrop-filter: blur(20px); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); pointer-events: auto; }
@@ -17,7 +17,7 @@
         
         .source-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
         .btn { background: #1a1a3a; border: 1px solid #2a2a50; color: #fff; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
-        .btn.active { background: #00f2ff; color: #050510; border-color: #00f2ff; font-weight: 700; }
+        .btn.active { background: #E85002; color: #050510; border-color: #E85002; font-weight: 700; }
         
         #ht-canvas-container { position: absolute; inset: 0; z-index: 1; }
         .hint { font-size: 12px; text-align: center; opacity: 0.4; }
@@ -66,8 +66,8 @@
         <div class="control-group">
             <label>Data Source</label>
             <div class="source-grid">
-                <button class="btn active" data-source="none">None</button>
-                <button class="btn" data-source="image">Image</button>
+                <button class="btn" data-source="none">None</button>
+                <button class="btn active" data-source="image">Image</button>
                 <button class="btn" data-source="video">Video</button>
                 <button class="btn" data-source="webcam">Webcam</button>
             </div>
@@ -105,23 +105,26 @@
 
         <div class="control-group">
             <label>Main Color</label>
-            <input type="color" id="color" value="#00f2ff">
+            <input type="color" id="color" value="#E85002">
         </div>
     </aside>
 
     <video id="video-source" loop muted crossorigin="anonymous" src=""></video>
-    <img id="image-source" crossOrigin="anonymous" src="https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?auto=format&fit=crop&q=80&w=1000">
+    <img id="image-source" crossOrigin="anonymous" src="sampleimage.png">
 
     <script type="module">
         import Halftone from './index.js';
 
-        setTimeout(() => {
+        setTimeout(async () => {
             const container = document.getElementById('ht-canvas-container');
             const fx = new Halftone({ 
                 container: container,
                 grid: 14,
-                color: '#00f2ff'
+                color: '#E85002',
+                source: '#image-source'
             });
+            await fx.loadSource();
+            fx.createGrid();
 
             const updateLabel = (id, val) => {
                 const el = document.getElementById(id + '-val');
