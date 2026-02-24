@@ -91,7 +91,14 @@ class Halftone {
     
     this.canvas = document.createElement('canvas');
     this.ctx = this.canvas.getContext('2d', { alpha: needsAlpha });
-    this.root.appendChild(this.canvas);
+    
+    // Minimal structural styles for the canvas element itself
+    this.canvas.style.position = 'absolute';
+    this.canvas.style.inset = '0';
+    this.canvas.style.display = 'block';
+    this.canvas.style.pointerEvents = 'none';
+    
+    this.root.prepend(this.canvas);
     
     this.buffer = document.createElement('canvas');
     this.bctx = this.buffer.getContext('2d', { willReadFrequently: true });
