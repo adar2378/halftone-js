@@ -8,6 +8,7 @@ export default class Halftone3D {
     static defaults = {
         grid: 60,
         gap: 0,
+        fit: 'cover', // cover, contain, fill
         shape: 'circle', // circle, square, diamond, triangle
         color: '#E85002',
         bgColor: '#050510',
@@ -30,6 +31,7 @@ export default class Halftone3D {
 
         this.width = 0;
         this.height = 0;
+        this.sourceAspect = 1;
         this.mouse = new THREE.Vector2(0, 0);
         this.time = 0;
         this._init = false;
@@ -67,6 +69,7 @@ export default class Halftone3D {
             'brightness': () => this.uniforms.uBrightness.value = value,
             'radius': () => this.uniforms.uRadius.value = value,
             'strength': () => this.uniforms.uStrength.value = value,
+            'fit': () => this.uniforms.uFit.value = this._getFitId(value),
             'interaction': () => this.uniforms.uInteraction.value = this._getInteractionId(value)
         };
 
@@ -80,19 +83,38 @@ export default class Halftone3D {
         if (!src) return;
         if (src === 'webcam') return this._setupWebcam();
 
-        const isVideo = src.match(/\.(mp4|webm)$/i) || src.startsWith('blob:');
+        // Check if it's a video (explicit extension or blob type)
+        const isVideo = src.match(/\.(mp4|webm|ogg)$/i) || (src.startsWith('blob:') && this._lastUploadedType?.startsWith('video'));
+        
         if (isVideo) {
-            const video = document.createElement('video');
-            video.src = src; video.crossOrigin = "anonymous";
-            video.loop = true; video.muted = true; video.playsInline = true;
-            await video.play();
-            this.uniforms.uTexture.value = new THREE.VideoTexture(video);
+            try {
+                const video = document.createElement('video');
+                video.src = src; video.crossOrigin = "anonymous";
+                video.loop = true; video.muted = true; video.playsInline = true;
+                video.onloadedmetadata = () => {
+                    this.sourceAspect = video.videoWidth / video.videoHeight;
+                    if (this.uniforms) this.uniforms.uSourceAspect.value = this.sourceAspect;
+                };
+                await video.play();
+                this.uniforms.uTexture.value = new THREE.VideoTexture(video);
+            } catch (e) {
+                console.warn('Halftone3D: Video load failed, falling back to image loader', e);
+                this._loadImage(src);
+            }
         } else {
-            new THREE.TextureLoader().load(src, (tex) => {
-                tex.minFilter = THREE.LinearFilter;
-                this.uniforms.uTexture.value = tex;
-            });
+            this._loadImage(src);
         }
+    }
+
+    _loadImage(src) {
+        new THREE.TextureLoader().load(src, (tex) => {
+            tex.minFilter = THREE.LinearFilter;
+            this.sourceAspect = tex.image.width / tex.image.height;
+            if (this.uniforms) this.uniforms.uSourceAspect.value = this.sourceAspect;
+            this.uniforms.uTexture.value = tex;
+        }, undefined, (err) => {
+            console.error('Halftone3D: Image load failed', err);
+        });
     }
 
     _setupScene() {
@@ -116,7 +138,7 @@ export default class Halftone3D {
         this.container.style.overflow = 'hidden';
         this.container.appendChild(this.renderer.domElement);
 
-        this.defaultTexture = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1, THREE.RGBAFormat);
+        this.defaultTexture = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1, THREE.RGBAFormat);
         this.defaultTexture.needsUpdate = true;
     }
 
@@ -180,6 +202,8 @@ export default class Halftone3D {
         return {
             uTime: { value: 0 },
             uTexture: { value: this.uniforms?.uTexture?.value || this.defaultTexture },
+            uSourceAspect: { value: this.sourceAspect },
+            uContainerAspect: { value: this.width / this.height },
             uMouse: { value: this.mouse },
             uColor: { value: new THREE.Color(this.config.color === 'auto' ? '#ffffff' : this.config.color) },
             uGrid: { value: new THREE.Vector2(cols, rows) },
@@ -190,7 +214,8 @@ export default class Halftone3D {
             uStrength: { value: this.config.strength },
             uInteraction: { value: this._getInteractionId(this.config.interaction) },
             uAutoColor: { value: this.config.color === 'auto' ? 1 : 0 },
-            uGap: { value: this.config.gap }
+            uGap: { value: this.config.gap },
+            uFit: { value: this._getFitId(this.config.fit) }
         };
     }
 
@@ -198,21 +223,46 @@ export default class Halftone3D {
         return { 'none': 0, 'repulse': 1, 'attract': 2, 'vortex': 3, 'ripple': 4 }[type] || 0;
     }
 
+    _getFitId(fit) {
+        return { 'fill': 0, 'cover': 1, 'contain': 2 }[fit] || 1;
+    }
+
     _getVertexShader() {
         return `
             uniform sampler2D uTexture;
-            uniform float uBrightness, uContrast, uRadius, uStrength, uDotScale, uTime, uGap;
+            uniform float uBrightness, uContrast, uRadius, uStrength, uDotScale, uTime, uGap, uSourceAspect, uContainerAspect;
             uniform vec2 uMouse, uGrid;
-            uniform int uInteraction;
+            uniform int uInteraction, uFit;
             attribute vec3 instancePos;
             attribute vec2 instanceUV;
             varying float vScale;
             varying vec3 vColor;
 
+            vec2 getFitUV(vec2 uv, float cA, float sA, int mode) {
+                if (mode == 0) return uv;
+                float ratio = cA / sA;
+                vec2 newUv = uv;
+                if (mode == 1) { // cover
+                    if (ratio > 1.0) newUv.y = (uv.y - 0.5) / ratio + 0.5;
+                    else newUv.x = (uv.x - 0.5) * ratio + 0.5;
+                } else if (mode == 2) { // contain
+                    if (ratio > 1.0) newUv.x = (uv.x - 0.5) * ratio + 0.5;
+                    else newUv.y = (uv.y - 0.5) / ratio + 0.5;
+                }
+                return newUv;
+            }
+
             void main() {
-                vec4 texColor = texture2D(uTexture, instanceUV);
+                vec2 correctedUV = getFitUV(instanceUV, uContainerAspect, uSourceAspect, uFit);
+                
+                // Sample texture
+                vec4 texColor = texture2D(uTexture, correctedUV);
                 vColor = texColor.rgb;
-                float luma = dot(vColor, vec3(0.299, 0.587, 0.114));
+
+                // Out of bounds check for contain mode
+                bool oob = (uFit == 2) && (correctedUV.x < 0.0 || correctedUV.x > 1.0 || correctedUV.y < 0.0 || correctedUV.y > 1.0);
+                
+                float luma = oob ? 0.0 : dot(vColor, vec3(0.299, 0.587, 0.114));
                 float scale = pow(clamp(luma * uBrightness, 0.0, 1.0), uContrast);
                 vScale = scale;
 
@@ -253,6 +303,10 @@ export default class Halftone3D {
         navigator.mediaDevices?.getUserMedia({ video: true }).then(stream => {
             const video = document.createElement('video');
             video.srcObject = stream; video.play();
+            video.onloadedmetadata = () => {
+                this.sourceAspect = video.videoWidth / video.videoHeight;
+                if (this.uniforms) this.uniforms.uSourceAspect.value = this.sourceAspect;
+            };
             this.uniforms.uTexture.value = new THREE.VideoTexture(video);
         });
     }
@@ -271,6 +325,7 @@ export default class Halftone3D {
         this.camera.top = 1/aspect; this.camera.bottom = -1/aspect;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(this.width, this.height);
+        if (this.uniforms) this.uniforms.uContainerAspect.value = aspect;
         if (this._init) this._setupGrid();
     }
 
