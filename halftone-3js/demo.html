@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Halftone 3D (WebGL) - High Performance</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
+        #app { position: absolute; inset: 0; }
+        .ui { position: absolute; top: 20px; left: 20px; color: #fff; z-index: 10; pointer-events: none; }
+        h1 { margin: 0; font-size: 24px; color: #E85002; }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <h1>Halftone 3D Engine</h1>
+        <p>WebGL / InstancedMesh / Vertex Shaders</p>
+    </div>
+    <div id="app"></div>
+
+    <!-- Import Map for Three.js (Optional but good for some browsers/setups) -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import Halftone3D from './index.js';
+
+        const fx = new Halftone3D({
+            container: '#app',
+            grid: 100, // 100x100 grid = 10,000 dots. Easy for WebGL.
+            source: '/sampleimage.png',
+            color: '#E85002',
+            interaction: 'repulse',
+            radius: 0.3,
+            strength: 0.8
+        });
+
+        // Debug controls (console access)
+        window.fx = fx;
+    </script>
+</body>
+</html>
