@@ -81,13 +81,13 @@ class Halftone {
         if (this.config.contrast === undefined) this.config.contrast = 2;
         if (this.config.brightness === undefined) this.config.brightness = 1;
     
-        // Early return if already loaded, but we keep the config for reference
-        if (container.dataset.htLoaded) return;
-        container.dataset.htLoaded = 'true';
-    
-        // 3. Optimized Canvas Context
-        const bg = this.config.bgColor.toLowerCase();
-        const needsAlpha = bg === 'transparent' || bg.includes('rgba') || bg.includes('hsla');
+            if (container.dataset.htLoaded) return;
+            container.dataset.htLoaded = 'true';
+            container.__halftone = this;
+        
+            // 3. Optimized Canvas Context
+            const bg = this.config.bgColor.toLowerCase();
+            const needsAlpha = bg === 'transparent' || bg.includes('rgba') || bg.includes('hsla');
     
     this.canvas = document.createElement('canvas');
     this.ctx = this.canvas.getContext('2d', { alpha: needsAlpha });
@@ -190,11 +190,12 @@ class Halftone {
   _discoverAttributes() {
     const ds = this.root.dataset;
     const attrs = {};
-    const validKeys = new Set(['grid', 'shape', 'interaction', 'fit', 'source', 'dotScale', 'spring', 'friction', 'radius', 'strength', 'stretch', 'color', 'bgColor']);
+    const validKeys = new Set(['grid', 'gap', 'shape', 'interaction', 'fit', 'source', 'dotScale', 'spring', 'friction', 'radius', 'strength', 'stretch', 'color', 'bgColor', 'contrast', 'brightness', 'minScale']);
     
     for (const key in ds) {
       if (key.startsWith('ht')) {
         const prop = key.slice(2).charAt(0).toLowerCase() + key.slice(3);
+        if (prop === 'element') continue; // Skip the marker attribute
         if (!validKeys.has(prop)) {
             console.warn(`[Halftone] Unknown attribute: data-ht-${prop}`);
             continue;
