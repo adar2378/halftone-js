@@ -1,0 +1,39 @@
+{
+  "name": "halftone-webgl",
+  "version": "1.0.0",
+  "description": "GPU-accelerated halftone effect with WebGL — lightweight, Webflow-friendly",
+  "author": "adar2378",
+  "license": "MIT",
+  "main": "dist/halftone-webgl.min.js",
+  "module": "dist/halftone-webgl.esm.js",
+  "exports": {
+    ".": {
+      "import": "./dist/halftone-webgl.esm.js",
+      "default": "./dist/halftone-webgl.min.js"
+    }
+  },
+  "files": [
+    "dist/",
+    "src/",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node build.js",
+    "dev": "node build.js --watch"
+  },
+  "dependencies": {
+    "ogl": "^1.0.8"
+  },
+  "keywords": [
+    "halftone",
+    "webgl",
+    "gpu",
+    "ogl",
+    "shader",
+    "cmyk",
+    "interaction",
+    "webflow",
+    "creative-coding"
+  ]
+}

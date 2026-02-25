@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HalftoneWebGL — Documentation</title>
+  <style>
+    /* ─── Reset & Base ─── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0f;
+      color: #c8c8d0;
+      line-height: 1.7;
+      font-size: 15px;
+    }
+    a { color: #E85002; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ─── Layout ─── */
+    .wrapper {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    /* ─── Header ─── */
+    .doc-header {
+      padding: 80px 0 48px;
+      border-bottom: 1px solid #1e1e28;
+      margin-bottom: 48px;
+    }
+    .doc-header h1 {
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+    .doc-header p {
+      font-size: 17px;
+      color: #888;
+      margin-bottom: 20px;
+      max-width: 540px;
+    }
+    .header-links { display: flex; gap: 12px; }
+    .header-links a {
+      padding: 8px 20px;
+      background: #1a1a24;
+      border: 1px solid #252530;
+      border-radius: 8px;
+      color: #ddd;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.15s;
+    }
+    .header-links a:hover { background: #252530; text-decoration: none; }
+    .header-links a.primary { background: #E85002; border-color: #E85002; color: #fff; }
+    .header-links a.primary:hover { background: #ff6b1a; }
+
+    /* ─── Nav ─── */
+    .doc-nav {
+      position: sticky;
+      top: 0;
+      background: rgba(10, 10, 15, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #1e1e28;
+      z-index: 100;
+      padding: 12px 0;
+      margin-bottom: 48px;
+    }
+    .doc-nav-inner {
+      display: flex;
+      gap: 24px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .doc-nav-inner::-webkit-scrollbar { display: none; }
+    .doc-nav a {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #666;
+      white-space: nowrap;
+      transition: color 0.15s;
+    }
+    .doc-nav a:hover { color: #E85002; text-decoration: none; }
+
+    /* ─── Sections ─── */
+    .doc-section {
+      margin-bottom: 64px;
+      scroll-margin-top: 60px;
+    }
+    .doc-section h2 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.5px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #1e1e28;
+    }
+    .doc-section h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #e0e0e0;
+      margin: 32px 0 12px;
+    }
+    .doc-section h4 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #ccc;
+      margin: 20px 0 8px;
+    }
+    .doc-section p {
+      margin-bottom: 12px;
+    }
+    .doc-section ul {
+      margin: 0 0 16px 24px;
+    }
+    .doc-section li {
+      margin-bottom: 4px;
+    }
+
+    /* ─── Code ─── */
+    code {
+      font-family: 'SF Mono', SFMono-Regular, 'Cascadia Code', Menlo, Consolas, monospace;
+      font-size: 13px;
+      background: #16161e;
+      padding: 2px 7px;
+      border-radius: 4px;
+      color: #E85002;
+    }
+    pre {
+      background: #111118;
+      border: 1px solid #1e1e28;
+      border-radius: 10px;
+      padding: 20px 24px;
+      overflow-x: auto;
+      margin: 12px 0 20px;
+      line-height: 1.6;
+    }
+    pre code {
+      background: none;
+      padding: 0;
+      color: #c8c8d0;
+      font-size: 13px;
+    }
+    .comment { color: #555; }
+    .keyword { color: #c678dd; }
+    .string { color: #98c379; }
+    .tag { color: #e06c75; }
+    .attr { color: #d19a66; }
+    .val { color: #98c379; }
+
+    /* ─── Tabs ─── */
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 0;
+    }
+    .tab {
+      padding: 8px 20px;
+      background: #16161e;
+      border: 1px solid #1e1e28;
+      border-bottom: none;
+      color: #888;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .tab:first-child { border-radius: 8px 0 0 0; }
+    .tab:last-child { border-radius: 0 8px 0 0; }
+    .tab.active { background: #111118; color: #E85002; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .tab-content pre { border-radius: 0 10px 10px 10px; margin-top: 0; }
+
+    /* ─── Tables ─── */
+    .config-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 24px;
+      font-size: 13px;
+    }
+    .config-table th {
+      text-align: left;
+      padding: 10px 14px;
+      background: #111118;
+      color: #888;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid #1e1e28;
+    }
+    .config-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #141420;
+      vertical-align: top;
+    }
+    .config-table tr:hover td { background: rgba(232, 80, 2, 0.03); }
+    .config-table code {
+      font-size: 12px;
+    }
+    .group-row td {
+      background: #0e0e16;
+      color: #666;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 600;
+      padding: 12px 14px 8px;
+      border-bottom: 1px solid #1e1e28;
+    }
+
+    /* ─── Live Preview Grid ─── */
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin: 16px 0 24px;
+    }
+    .preview-cell {
+      position: relative;
+      height: 180px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .preview-label {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      z-index: 1;
+      padding: 4px 10px;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(6px);
+      border-radius: 6px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.8);
+      letter-spacing: 0.5px;
+      pointer-events: none;
+    }
+
+    /* ─── Interaction List ─── */
+    .interaction-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 16px 0 24px;
+    }
+    .interaction-item {
+      background: #111118;
+      border: 1px solid #1e1e28;
+      border-radius: 10px;
+      padding: 16px 20px;
+    }
+    .interaction-item strong {
+      color: #E85002;
+      font-size: 13px;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .interaction-item span {
+      font-size: 13px;
+      color: #888;
+    }
+
+    /* ─── Overlay Demo ─── */
+    .overlay-demo {
+      position: relative;
+      height: 300px;
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 16px 0 24px;
+    }
+    .overlay-demo-content {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      text-align: center;
+      gap: 12px;
+      padding: 32px;
+    }
+    .overlay-demo-content h3 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      margin: 0;
+    }
+    .overlay-demo-content p {
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+      max-width: 400px;
+    }
+    .overlay-btn {
+      padding: 10px 24px;
+      background: rgba(255,255,255,0.12);
+      backdrop-filter: blur(8px);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .overlay-btn:hover { background: rgba(255,255,255,0.25); }
+
+    /* ─── Footer ─── */
+    .doc-footer {
+      border-top: 1px solid #1e1e28;
+      padding: 32px 0;
+      margin-top: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: #555;
+    }
+    .doc-footer a { color: #888; }
+    .doc-footer a:hover { color: #E85002; }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 768px) {
+      .wrapper { padding: 0 16px; }
+      .doc-header { padding: 48px 0 32px; }
+      .doc-header h1 { font-size: 36px; }
+      .preview-grid { grid-template-columns: 1fr 1fr; }
+      .interaction-grid { grid-template-columns: 1fr; }
+      .config-table { font-size: 12px; }
+      .config-table th, .config-table td { padding: 8px 10px; }
+    }
+    @media (max-width: 480px) {
+      .preview-grid { grid-template-columns: 1fr; }
+      .header-links { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════ Header ═══════════════ -->
+  <div class="wrapper">
+    <div class="doc-header">
+      <h1>HalftoneWebGL</h1>
+      <p>GPU-accelerated halftone effects for the web. Lightweight, interactive, drop-in ready.</p>
+      <div class="header-links">
+        <a class="primary" href="demo.html">Live Demo</a>
+        <a href="https://github.com">GitHub</a>
+        <a href="https://www.npmjs.com/package/halftone-webgl">npm</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ Sticky Nav ═══════════════ -->
+  <nav class="doc-nav">
+    <div class="wrapper">
+      <div class="doc-nav-inner">
+        <a href="#installation">Installation</a>
+        <a href="#quick-start">Quick Start</a>
+        <a href="#configuration">Configuration</a>
+        <a href="#data-attributes">Data Attributes</a>
+        <a href="#js-api">JS API</a>
+        <a href="#shapes">Shapes</a>
+        <a href="#color-modes">Color Modes</a>
+        <a href="#interactions">Interactions</a>
+        <a href="#content-overlay">Content Overlay</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="wrapper">
+
+    <!-- ═══════════════ Installation ═══════════════ -->
+    <section class="doc-section" id="installation">
+      <h2>Installation</h2>
+
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab(this, 'install-cdn')">CDN</div>
+        <div class="tab" onclick="switchTab(this, 'install-npm')">npm</div>
+      </div>
+      <div class="tab-content active" id="install-cdn">
+<pre><code><span class="comment">&lt;!-- Drop this before &lt;/body&gt; --&gt;</span>
+<span class="tag">&lt;script</span> <span class="attr">src</span>=<span class="val">"https://unpkg.com/halftone-webgl/dist/halftone-webgl.min.js"</span><span class="tag">&gt;&lt;/script&gt;</span></code></pre>
+      </div>
+      <div class="tab-content" id="install-npm">
+<pre><code>npm install halftone-webgl</code></pre>
+<pre><code><span class="keyword">import</span> HalftoneWebGL <span class="keyword">from</span> <span class="string">'halftone-webgl'</span>;</code></pre>
+      </div>
+    </section>
+
+    <!-- ═══════════════ Quick Start ═══════════════ -->
+    <section class="doc-section" id="quick-start">
+      <h2>Quick Start</h2>
+
+      <h3>Data Attributes (zero JS)</h3>
+      <p>Add <code>data-hwgl-element</code> to any container. The library auto-initializes on page load.</p>
+<pre><code><span class="tag">&lt;div</span> <span class="attr">data-hwgl-element</span>
+     <span class="attr">data-hwgl-source</span>=<span class="val">"photo.jpg"</span>
+     <span class="attr">data-hwgl-shape</span>=<span class="val">"circle"</span>
+     <span class="attr">data-hwgl-color-mode</span>=<span class="val">"mono"</span>
+     <span class="attr">data-hwgl-interaction</span>=<span class="val">"sparkle"</span>
+     <span class="attr">style</span>=<span class="val">"width: 100%; height: 400px;"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;h1&gt;</span>Your content here<span class="tag">&lt;/h1&gt;</span>
+<span class="tag">&lt;/div&gt;</span></code></pre>
+
+      <h3>JavaScript API</h3>
+<pre><code><span class="keyword">const</span> ht = <span class="keyword">new</span> HalftoneWebGL({
+  container: <span class="string">'#my-element'</span>,
+  source:    <span class="string">'photo.jpg'</span>,
+  shape:     <span class="string">'circle'</span>,
+  colorMode: <span class="string">'mono'</span>,
+  interaction: <span class="string">'sparkle'</span>,
+});
+
+<span class="comment">// Update at runtime</span>
+ht.set(<span class="string">'frequency'</span>, 60);
+ht.set({ shape: <span class="string">'diamond'</span>, colorMode: <span class="string">'cmyk'</span> });
+
+<span class="comment">// Load new source</span>
+<span class="keyword">await</span> ht.loadSource(<span class="string">'video.mp4'</span>);
+
+<span class="comment">// Clean up</span>
+ht.destroy();</code></pre>
+    </section>
+
+    <!-- ═══════════════ Configuration ═══════════════ -->
+    <section class="doc-section" id="configuration">
+      <h2>Configuration Reference</h2>
+      <p>All options can be passed to the constructor, set via <code>.set()</code>, or declared as data attributes.</p>
+
+      <table class="config-table">
+        <thead>
+          <tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr class="group-row"><td colspan="4">Screen</td></tr>
+          <tr><td><code>frequency</code></td><td>number</td><td><code>40</code></td><td>Dot density — number of dots per row (5–150)</td></tr>
+          <tr><td><code>angle</code></td><td>number</td><td><code>0</code></td><td>Screen rotation angle in degrees</td></tr>
+
+          <tr class="group-row"><td colspan="4">Dot</td></tr>
+          <tr><td><code>shape</code></td><td>string</td><td><code>'circle'</code></td><td>Dot shape: <code>circle</code> <code>square</code> <code>diamond</code> <code>line</code> <code>cross</code> <code>ellipse</code></td></tr>
+          <tr><td><code>scale</code></td><td>number</td><td><code>1.0</code></td><td>Dot size multiplier (0.1–2)</td></tr>
+          <tr><td><code>softness</code></td><td>number</td><td><code>0.5</code></td><td>Edge softness / anti-aliasing (0–1)</td></tr>
+          <tr><td><code>gap</code></td><td>number</td><td><code>0</code></td><td>Gap between dots (0–1)</td></tr>
+
+          <tr class="group-row"><td colspan="4">Tone</td></tr>
+          <tr><td><code>contrast</code></td><td>number</td><td><code>1.8</code></td><td>Tonal contrast curve (0.2–5)</td></tr>
+          <tr><td><code>brightness</code></td><td>number</td><td><code>1.0</code></td><td>Brightness multiplier (0.1–3)</td></tr>
+          <tr><td><code>invert</code></td><td>boolean</td><td><code>false</code></td><td>Invert tones (light dots on dark areas)</td></tr>
+          <tr><td><code>minDot</code></td><td>number</td><td><code>0</code></td><td>Minimum dot size — prevents dots from disappearing (0–1)</td></tr>
+
+          <tr class="group-row"><td colspan="4">Color</td></tr>
+          <tr><td><code>colorMode</code></td><td>string</td><td><code>'mono'</code></td><td>Color mode: <code>mono</code> <code>auto</code> <code>cmyk</code> <code>duotone</code></td></tr>
+          <tr><td><code>color</code></td><td>hex</td><td><code>'#E85002'</code></td><td>Primary dot color (mono, duotone highlight)</td></tr>
+          <tr><td><code>colorB</code></td><td>hex</td><td><code>'#000000'</code></td><td>Secondary color (duotone shadow)</td></tr>
+          <tr><td><code>bgColor</code></td><td>hex</td><td><code>'#050510'</code></td><td>Background fill color</td></tr>
+          <tr><td><code>cmykAngles</code></td><td>number[4]</td><td><code>[15,75,0,45]</code></td><td>Per-channel screen angles in degrees [C, M, Y, K]</td></tr>
+
+          <tr class="group-row"><td colspan="4">Source</td></tr>
+          <tr><td><code>source</code></td><td>string / null</td><td><code>null</code></td><td>Image URL, video URL, <code>'webcam'</code>, or null</td></tr>
+          <tr><td><code>fit</code></td><td>string</td><td><code>'cover'</code></td><td>Source fit mode: <code>cover</code> <code>contain</code> <code>fill</code></td></tr>
+
+          <tr class="group-row"><td colspan="4">Interaction</td></tr>
+          <tr><td><code>interaction</code></td><td>string</td><td><code>'none'</code></td><td>Mouse interaction effect (see <a href="#interactions">Interactions</a>)</td></tr>
+          <tr><td><code>radius</code></td><td>number</td><td><code>0.3</code></td><td>Interaction area radius (0–1)</td></tr>
+          <tr><td><code>strength</code></td><td>number</td><td><code>0.5</code></td><td>Interaction intensity (0–1)</td></tr>
+          <tr><td><code>trailFade</code></td><td>number</td><td><code>0.03</code></td><td>Trail fade rate for comet/sparkle effects (0–1)</td></tr>
+
+          <tr class="group-row"><td colspan="4">Container</td></tr>
+          <tr><td><code>dpr</code></td><td>'auto' / number</td><td><code>'auto'</code></td><td>Device pixel ratio (auto caps at 2)</td></tr>
+          <tr><td><code>zIndex</code></td><td>number</td><td><code>0</code></td><td>Canvas z-index</td></tr>
+          <tr><td><code>pauseSelector</code></td><td>string</td><td><code>'a, button, [data-hwgl-pause]'</code></td><td>CSS selector for elements that pause interaction on hover</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ═══════════════ Data Attributes ═══════════════ -->
+    <section class="doc-section" id="data-attributes">
+      <h2>Data Attributes</h2>
+      <p>All config keys map to <code>data-hwgl-*</code> attributes using kebab-case. Add <code>data-hwgl-element</code> to enable auto-initialization.</p>
+
+      <table class="config-table">
+        <thead>
+          <tr><th>Attribute</th><th>Config Key</th><th>Example</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>data-hwgl-element</code></td><td><em>(marker)</em></td><td>Enables auto-init</td></tr>
+          <tr><td><code>data-hwgl-source</code></td><td><code>source</code></td><td><code>"photo.jpg"</code></td></tr>
+          <tr><td><code>data-hwgl-frequency</code></td><td><code>frequency</code></td><td><code>"40"</code></td></tr>
+          <tr><td><code>data-hwgl-angle</code></td><td><code>angle</code></td><td><code>"45"</code></td></tr>
+          <tr><td><code>data-hwgl-shape</code></td><td><code>shape</code></td><td><code>"diamond"</code></td></tr>
+          <tr><td><code>data-hwgl-scale</code></td><td><code>scale</code></td><td><code>"1.2"</code></td></tr>
+          <tr><td><code>data-hwgl-softness</code></td><td><code>softness</code></td><td><code>"0.5"</code></td></tr>
+          <tr><td><code>data-hwgl-gap</code></td><td><code>gap</code></td><td><code>"0.1"</code></td></tr>
+          <tr><td><code>data-hwgl-contrast</code></td><td><code>contrast</code></td><td><code>"1.8"</code></td></tr>
+          <tr><td><code>data-hwgl-brightness</code></td><td><code>brightness</code></td><td><code>"1.0"</code></td></tr>
+          <tr><td><code>data-hwgl-invert</code></td><td><code>invert</code></td><td><code>"true"</code></td></tr>
+          <tr><td><code>data-hwgl-min-dot</code></td><td><code>minDot</code></td><td><code>"0.05"</code></td></tr>
+          <tr><td><code>data-hwgl-color-mode</code></td><td><code>colorMode</code></td><td><code>"cmyk"</code></td></tr>
+          <tr><td><code>data-hwgl-color</code></td><td><code>color</code></td><td><code>"#E85002"</code></td></tr>
+          <tr><td><code>data-hwgl-color-b</code></td><td><code>colorB</code></td><td><code>"#000000"</code></td></tr>
+          <tr><td><code>data-hwgl-bg-color</code></td><td><code>bgColor</code></td><td><code>"#ffffff"</code></td></tr>
+          <tr><td><code>data-hwgl-cmyk-angles</code></td><td><code>cmykAngles</code></td><td><code>"15,75,0,45"</code></td></tr>
+          <tr><td><code>data-hwgl-fit</code></td><td><code>fit</code></td><td><code>"contain"</code></td></tr>
+          <tr><td><code>data-hwgl-interaction</code></td><td><code>interaction</code></td><td><code>"sparkle"</code></td></tr>
+          <tr><td><code>data-hwgl-radius</code></td><td><code>radius</code></td><td><code>"0.3"</code></td></tr>
+          <tr><td><code>data-hwgl-strength</code></td><td><code>strength</code></td><td><code>"0.5"</code></td></tr>
+          <tr><td><code>data-hwgl-trail-fade</code></td><td><code>trailFade</code></td><td><code>"0.03"</code></td></tr>
+          <tr><td><code>data-hwgl-dpr</code></td><td><code>dpr</code></td><td><code>"auto"</code> or <code>"1.5"</code></td></tr>
+          <tr><td><code>data-hwgl-z-index</code></td><td><code>zIndex</code></td><td><code>"10"</code></td></tr>
+          <tr><td><code>data-hwgl-pause-selector</code></td><td><code>pauseSelector</code></td><td><code>"a, button"</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ═══════════════ JavaScript API ═══════════════ -->
+    <section class="doc-section" id="js-api">
+      <h2>JavaScript API</h2>
+
+      <h3>Constructor</h3>
+<pre><code><span class="keyword">const</span> ht = <span class="keyword">new</span> HalftoneWebGL({
+  container: <span class="string">'#my-element'</span>,  <span class="comment">// CSS selector or DOM element (required)</span>
+  source: <span class="string">'photo.jpg'</span>,       <span class="comment">// any config option can be passed here</span>
+  frequency: 50,
+  shape: <span class="string">'diamond'</span>,
+  interaction: <span class="string">'sparkle'</span>,
+});</code></pre>
+
+      <h3>Methods</h3>
+
+      <h4><code>.set(key, value)</code> / <code>.set({ ... })</code></h4>
+      <p>Update one or more configuration options at runtime. Changes apply immediately.</p>
+<pre><code>ht.set(<span class="string">'frequency'</span>, 60);
+ht.set({ shape: <span class="string">'diamond'</span>, colorMode: <span class="string">'cmyk'</span>, contrast: 2.5 });</code></pre>
+
+      <h4><code>.loadSource(src)</code></h4>
+      <p>Load a new image, video, or webcam source. Returns a Promise that resolves when the source is ready.</p>
+<pre><code><span class="keyword">await</span> ht.loadSource(<span class="string">'photo.jpg'</span>);      <span class="comment">// image URL</span>
+<span class="keyword">await</span> ht.loadSource(<span class="string">'video.mp4'</span>);      <span class="comment">// video URL (.mp4, .webm, .ogg)</span>
+<span class="keyword">await</span> ht.loadSource(<span class="string">'webcam'</span>);         <span class="comment">// request webcam access</span>
+<span class="keyword">await</span> ht.loadSource(myVideoElement);   <span class="comment">// HTMLVideoElement</span>
+<span class="keyword">await</span> ht.loadSource(myImageElement);   <span class="comment">// HTMLImageElement</span></code></pre>
+
+      <h4><code>.resize()</code></h4>
+      <p>Manually trigger a resize. Called automatically via ResizeObserver — rarely needed.</p>
+
+      <h4><code>.pause()</code> / <code>.resume()</code></h4>
+      <p>Stop or start the animation loop.</p>
+<pre><code>ht.pause();   <span class="comment">// stop rendering</span>
+ht.resume();  <span class="comment">// start rendering</span></code></pre>
+
+      <h4><code>.snapshot(type?, quality?)</code></h4>
+      <p>Capture the current frame as a data URL.</p>
+<pre><code><span class="keyword">const</span> png = ht.snapshot();                          <span class="comment">// PNG (default)</span>
+<span class="keyword">const</span> jpg = ht.snapshot(<span class="string">'image/jpeg'</span>, 0.92);         <span class="comment">// JPEG at 92% quality</span>
+
+<span class="comment">// Download as file</span>
+<span class="keyword">const</span> a = document.createElement(<span class="string">'a'</span>);
+a.href = ht.snapshot();
+a.download = <span class="string">'halftone.png'</span>;
+a.click();</code></pre>
+
+      <h4><code>.destroy()</code></h4>
+      <p>Clean up all resources — stops animation, removes the canvas, releases video/webcam streams, clears event listeners.</p>
+<pre><code>ht.destroy();</code></pre>
+
+      <h3>Properties</h3>
+      <table class="config-table">
+        <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>ht.canvas</code></td><td>HTMLCanvasElement</td><td>The WebGL canvas element</td></tr>
+          <tr><td><code>ht.config</code></td><td>object</td><td>Copy of the current configuration</td></tr>
+          <tr><td><code>ht.isPlaying</code></td><td>boolean</td><td>Whether the animation loop is running</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Events</h3>
+      <p>Subscribe with <code>.on(event, fn)</code>, unsubscribe with <code>.off(event, fn)</code>.</p>
+<pre><code>ht.on(<span class="string">'ready'</span>, () => {
+  console.log(<span class="string">'First frame rendered'</span>);
+});
+
+ht.on(<span class="string">'sourceload'</span>, () => {
+  console.log(<span class="string">'Source texture loaded'</span>);
+});
+
+ht.on(<span class="string">'resize'</span>, ({ w, h }) => {
+  console.log(<span class="string">`Resized to ${w}x${h}`</span>);
+});
+
+ht.on(<span class="string">'error'</span>, (err) => {
+  console.error(<span class="string">'Error:'</span>, err);
+});</code></pre>
+
+      <table class="config-table">
+        <thead><tr><th>Event</th><th>Data</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>ready</code></td><td>—</td><td>First frame rendered or source loaded</td></tr>
+          <tr><td><code>sourceload</code></td><td>—</td><td>Source texture loaded successfully</td></tr>
+          <tr><td><code>resize</code></td><td><code>{ w, h }</code></td><td>Container was resized</td></tr>
+          <tr><td><code>error</code></td><td><code>Error</code></td><td>An error occurred</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ═══════════════ Shapes ═══════════════ -->
+    <section class="doc-section" id="shapes">
+      <h2>Shapes</h2>
+      <p>Six SDF-based dot shapes. Set via <code>shape</code> option or <code>data-hwgl-shape</code> attribute.</p>
+
+      <div class="preview-grid">
+        <div class="preview-cell">
+          <div data-hwgl-element
+               data-hwgl-source="https://picsum.photos/seed/doc-circle/600/400"
+               data-hwgl-shape="circle"
+               data-hwgl-color-mode="mono"
+               data-hwgl-frequency="35"
+               data-hwgl-interaction="magnify"
+               style="width:100%;height:100%"></div>
+          <div class="preview-label">circle</div>
+        </div>
+        <div class="preview-cell">
+          <div data-hwgl-element
+               data-hwgl-source="https://picsum.photos/seed/doc-square/600/400"
+               data-hwgl-shape="square"
+               data-hwgl-color-mode="mono"
+               data-hwgl-frequency="35"
+               data-hwgl-interaction="magnify"
+               style="width:100%;height:100%"></div>
+          <div class="preview-label">square</div>
+        </div>
+        <div class="preview-cell">
+          <div data-hwgl-element
+               data-hwgl-source="https://picsum.photos/seed/doc-diamond/600/400"
+               data-hwgl-shape="diamond"
+               data-hwgl-color-mode="mono"
+               data-hwgl-frequency="35"
+               data-hwgl-interaction="magnify"
+               style="width:100%;height:100%"></div>
+          <div class="preview-label">diamond</div>
+        </div>
+        <div class="preview-cell">
+          <div data-hwgl-element
+               data-hwgl-source="https://picsum.photos/seed/doc-line/600/400"
+               data-hwgl-shape="line"
+               data-hwgl-color-mode="mono"
+               data-hwgl-frequency="35"
+               data-hwgl-interaction="magnify"
+               style="width:100%;height:100%"></div>
+          <div class="preview-label">line</div>
+        </div>
+        <div class="preview-cell">
+          <div data-hwgl-element
+               data-hwgl-source="https://picsum.photos/seed/doc-cross/600/400"
+               data-hwgl-shape="cross"
+               data-hwgl-color-mode="mono"
+               data-hwgl-frequency="35"
+               data-hwgl-interaction="magnify"
+               style="width:100%;height:100%"></div>
+          <div class="preview-label">cross</div>
+        </div>
+        <div class="preview-cell">
+          <div data-hwgl-element
+               data-hwgl-source="https://picsum.photos/seed/doc-ellipse/600/400"
+               data-hwgl-shape="ellipse"
+               data-hwgl-color-mode="mono"
+               data-hwgl-frequency="35"
+               data-hwgl-interaction="magnify"
+               style="width:100%;height:100%"></div>
+          <div class="preview-label">ellipse</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ Color Modes ═══════════════ -->
+    <section class="doc-section" id="color-modes">
+      <h2>Color Modes</h2>
+      <p>Four color rendering modes. Set via <code>colorMode</code> option or <code>data-hwgl-color-mode</code> attribute.</p>
+
+      <div class="preview-grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="preview-cell" style="height: 200px;">
+          <div data-hwgl-element
+               data-hwgl-source="https://picsum.photos/seed/doc-mono/600/400"
+               data-hwgl-shape="circle"
+               data-hwgl-color-mode="mono"
+               data-hwgl-color="#E85002"
+               data-hwgl-frequency="40"
+               data-hwgl-interaction="magnify"
+               style="width:100%;height:100%"></div>
+          <div class="preview-label">mono — single color dots</div>
+        </div>
+        <div class="preview-cell" style="height: 200px;">
+          <div data-hwgl-element
+               data-hwgl-source="https://picsum.photos/seed/doc-auto/600/400"
+               data-hwgl-shape="circle"
+               data-hwgl-color-mode="auto"
+               data-hwgl-frequency="40"
+               data-hwgl-interaction="magnify"
+               style="width:100%;height:100%"></div>
+          <div class="preview-label">auto — source image colors</div>
+        </div>
+        <div class="preview-cell" style="height: 200px;">
+          <div data-hwgl-element
+               data-hwgl-source="https://picsum.photos/seed/doc-cmyk/600/400"
+               data-hwgl-shape="circle"
+               data-hwgl-color-mode="cmyk"
+               data-hwgl-frequency="40"
+               data-hwgl-interaction="magnify"
+               style="width:100%;height:100%"></div>
+          <div class="preview-label">cmyk — 4-channel separation</div>
+        </div>
+        <div class="preview-cell" style="height: 200px;">
+          <div data-hwgl-element
+               data-hwgl-source="https://picsum.photos/seed/doc-duotone/600/400"
+               data-hwgl-shape="circle"
+               data-hwgl-color-mode="duotone"
+               data-hwgl-color="#E85002"
+               data-hwgl-color-b="#6B5CE7"
+               data-hwgl-frequency="40"
+               data-hwgl-interaction="magnify"
+               style="width:100%;height:100%"></div>
+          <div class="preview-label">duotone — two-color blend</div>
+        </div>
+      </div>
+
+      <h3>Color Mode Details</h3>
+      <ul>
+        <li><strong>mono</strong> — Dots are rendered in a single <code>color</code> on top of <code>bgColor</code>. Classic halftone look.</li>
+        <li><strong>auto</strong> — Each dot uses the source image's color at that position. Full-color halftone.</li>
+        <li><strong>cmyk</strong> — Four halftone channels (Cyan, Magenta, Yellow, Key/Black) with independent screen angles via <code>cmykAngles</code>. Authentic print halftone.</li>
+        <li><strong>duotone</strong> — Shadows use <code>colorB</code>, highlights use <code>color</code>, mid-tones blend between them.</li>
+      </ul>
+    </section>
+
+    <!-- ═══════════════ Interactions ═══════════════ -->
+    <section class="doc-section" id="interactions">
+      <h2>Interactions</h2>
+      <p>Ten mouse-driven interaction effects. Set via <code>interaction</code> option or <code>data-hwgl-interaction</code> attribute. Adjust the area with <code>radius</code> and intensity with <code>strength</code>.</p>
+
+      <div class="interaction-grid">
+        <div class="interaction-item">
+          <strong>none</strong>
+          <span>No mouse interaction. Static halftone rendering.</span>
+        </div>
+        <div class="interaction-item">
+          <strong>reveal</strong>
+          <span>Fades to the original source image under the cursor.</span>
+        </div>
+        <div class="interaction-item">
+          <strong>magnify</strong>
+          <span>Enlarges dot size near the cursor.</span>
+        </div>
+        <div class="interaction-item">
+          <strong>warp</strong>
+          <span>Pushes the dot grid outward from the cursor position.</span>
+        </div>
+        <div class="interaction-item">
+          <strong>ripple</strong>
+          <span>Animated sine-wave distortion radiating from the cursor.</span>
+        </div>
+        <div class="interaction-item">
+          <strong>vortex</strong>
+          <span>Rotates the grid around the cursor in a swirl pattern.</span>
+        </div>
+        <div class="interaction-item">
+          <strong>colorShift</strong>
+          <span>Applies a hue rotation to dots near the cursor.</span>
+        </div>
+        <div class="interaction-item">
+          <strong>focus</strong>
+          <span>Increases dot frequency (sharpens) near the cursor.</span>
+        </div>
+        <div class="interaction-item">
+          <strong>comet</strong>
+          <span>Leaves a glowing trail behind the cursor with velocity-based stretching. Uses <code>trailFade</code>.</span>
+        </div>
+        <div class="interaction-item">
+          <strong>sparkle</strong>
+          <span>Leaves a sparkling trail with per-dot random animation. Uses <code>trailFade</code>.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ Content Overlay ═══════════════ -->
+    <section class="doc-section" id="content-overlay">
+      <h2>Content Overlay</h2>
+      <p>Place any HTML inside the halftone container. Children are auto-promoted above the canvas — text is selectable, buttons are clickable.</p>
+
+<pre><code><span class="tag">&lt;div</span> <span class="attr">data-hwgl-element</span>
+     <span class="attr">data-hwgl-source</span>=<span class="val">"bg.jpg"</span>
+     <span class="attr">data-hwgl-interaction</span>=<span class="val">"sparkle"</span>
+     <span class="attr">style</span>=<span class="val">"height: 400px;"</span><span class="tag">&gt;</span>
+
+  <span class="comment">&lt;!-- These sit above the canvas automatically --&gt;</span>
+  <span class="tag">&lt;h1&gt;</span>Heading<span class="tag">&lt;/h1&gt;</span>
+  <span class="tag">&lt;p&gt;</span>Paragraph text — fully selectable.<span class="tag">&lt;/p&gt;</span>
+  <span class="tag">&lt;button&gt;</span>Click me<span class="tag">&lt;/button&gt;</span>
+
+<span class="tag">&lt;/div&gt;</span></code></pre>
+
+      <p><strong>How it works:</strong></p>
+      <ul>
+        <li>The canvas is injected with <code>position: absolute; pointer-events: none</code></li>
+        <li>Child elements get <code>position: relative; z-index: 1</code></li>
+        <li>Buttons, links, and <code>[data-hwgl-pause]</code> elements pause the interaction on hover</li>
+      </ul>
+
+      <h3>Live Example</h3>
+      <div class="overlay-demo"
+           data-hwgl-element
+           data-hwgl-source="https://picsum.photos/seed/doc-overlay/1200/600"
+           data-hwgl-interaction="sparkle"
+           data-hwgl-color-mode="auto"
+           data-hwgl-frequency="40"
+           data-hwgl-softness="0.5"
+           data-hwgl-strength="0.6">
+        <div class="overlay-demo-content">
+          <h3>Content sits above the canvas</h3>
+          <p>This text is fully selectable. Buttons below pause the interaction on hover so they're easy to click.</p>
+          <button class="overlay-btn" data-hwgl-pause>Hover pauses interaction</button>
+        </div>
+      </div>
+
+      <h4>Custom Pause Elements</h4>
+      <p>Add <code>data-hwgl-pause</code> to any element to pause the interaction when hovered. Or customize the selector:</p>
+<pre><code><span class="keyword">new</span> HalftoneWebGL({
+  container: <span class="string">'#hero'</span>,
+  pauseSelector: <span class="string">'a, button, .my-interactive-element'</span>,
+});</code></pre>
+    </section>
+
+  </div>
+
+  <!-- ═══════════════ Footer ═══════════════ -->
+  <div class="wrapper">
+    <div class="doc-footer">
+      <span>HalftoneWebGL &middot; MIT License</span>
+      <div style="display:flex;gap:20px;">
+        <a href="demo.html">Demo</a>
+        <a href="https://github.com">GitHub</a>
+        <a href="https://www.npmjs.com/package/halftone-webgl">npm</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Scripts ─── -->
+  <script src="dist/halftone-webgl.min.js"></script>
+  <script>
+    // Tab switching
+    function switchTab(tabEl, contentId) {
+      const parent = tabEl.parentElement;
+      const section = parent.parentElement;
+      parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tabEl.classList.add('active');
+      section.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.getElementById(contentId).classList.add('active');
+    }
+  </script>
+</body>
+</html>

@@ -299,62 +299,135 @@
     <div class="container">
         <header>
             <h1>Halftone Configurator</h1>
-            <p>Design your halftone interactive panels, then copy the snippet directly into Webflow.</p>
+            <p>Design premium interactive surfaces. Use the controls to fine-tune the global look, or copy specific variants below.</p>
         </header>
 
-        <!-- Layout 1: Full Hero -->
+        <!-- Variant 1: The DevMonks Hero -->
         <section>
             <div class="section-header">
-                <span class="demo-label">Layout 1: Full-Width Hero Section</span>
-                <button class="copy-btn-small" data-layout-id="hero-panel">Copy Snippet</button>
+                <span class="demo-label">Variant 1: DevMonks Official Style</span>
+                <button class="copy-btn-small" data-layout-id="devmonks-hero">Copy Snippet</button>
             </div>
-            <div class="hero-layout" id="hero-panel">
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2; text-align: center; pointer-events: none;">
-                    <h2 style="font-size: 80px; margin: 0; line-height: 0.8; opacity: 0.9; color: #fff;">DRAMATIC<br>HERO</h2>
+            <div 
+                class="hero-layout" id="devmonks-hero"
+                style="height: 90vh; background: #000; border-radius: 32px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);"
+                data-ht-element
+                data-ht-source="sampleimage.png"
+                data-ht-grid="14"
+                data-ht-dot-scale="1.0"
+                data-ht-interaction="repulse"
+                data-ht-contrast="2.8"
+                data-ht-brightness="1.2"
+                data-ht-color="#E85002"
+            >
+                <!-- Navigation Mockup -->
+                <nav style="position: absolute; top: 0; left: 0; right: 0; padding: 40px; display: flex; justify-content: space-between; align-items: center; z-index: 10;">
+                    <div style="font-weight: 900; font-size: 20px; letter-spacing: -1px;">DEVMONKS<span style="color: var(--accent);">.</span></div>
+                    <div style="display: flex; gap: 30px; font-size: 13px; font-weight: 500; opacity: 0.8;">
+                        <span>Works</span>
+                        <span>Services</span>
+                        <span>About</span>
+                        <span style="color: var(--accent);">Contact</span>
+                    </div>
+                </nav>
+
+                <!-- Hero Content -->
+                <div style="position: relative; z-index: 2; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #fff; padding: 0 20px;">
+                    <h2 style="font-size: clamp(50px, 12vw, 160px); margin: 0; line-height: 0.85; font-weight: 900; letter-spacing: -6px; text-transform: uppercase;">ENGINEERING<br>ELITE<span style="color: var(--accent);">.</span></h2>
+                    <p style="font-size: clamp(14px, 2vw, 18px); opacity: 0.5; margin-top: 30px; max-width: 500px; line-height: 1.4; font-weight: 400;">We build high-performance digital products with physics-driven interactive layers.</p>
+                    
+                    <div style="margin-top: 50px;">
+                        <button class="btn active" style="padding: 18px 40px; border-radius: 100px; font-weight: 700; font-size: 14px; letter-spacing: 0.5px; box-shadow: 0 10px 30px rgba(232, 80, 2, 0.3);">BOOK A DEMO</button>
+                    </div>
+                </div>
+
+                <!-- Bottom Hint -->
+                <div style="position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); font-size: 10px; opacity: 0.3; letter-spacing: 2px; font-weight: 700; z-index: 10;">
+                    SCROLL TO EXPLORE
                 </div>
             </div>
         </section>
 
-        <!-- Layout 2: Card Grid -->
+        <!-- Variant 2: The Cyber Matrix -->
         <section>
             <div class="section-header">
-                <span class="demo-label">Layout 2: Card Grid Showcase</span>
-                <button class="copy-btn-small" data-layout-id="card-1">Copy Card Snippet</button>
+                <span class="demo-label">Variant 2: Cyber Matrix (Square + Glitch)</span>
+                <button class="copy-btn-small" data-layout-id="cyber-matrix">Copy Snippet</button>
+            </div>
+            <div 
+                class="boxed-layout" id="cyber-matrix"
+                style="height: 500px; background: #000;"
+                data-ht-element
+                data-ht-source="sampleimage.png"
+                data-ht-grid="18"
+                data-ht-shape="square"
+                data-ht-color="#00ff41"
+                data-ht-interaction="glitch"
+                data-ht-contrast="2.0"
+                data-ht-brightness="1.5"
+            >
+                <div style="position: absolute; top: 40px; left: 40px; z-index: 2; border-left: 2px solid #00ff41; padding-left: 20px;">
+                    <h3 style="color: #00ff41; font-family: monospace; margin: 0;">SYSTEM_ACTIVE</h3>
+                    <p style="font-size: 12px; font-family: monospace; opacity: 0.5;">Halftone Grid v1.0.4<br>Status: Stabilized</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Variant 3: Card Collection -->
+        <section>
+            <div class="section-header">
+                <span class="demo-label">Variant 3: Dynamic Sampling (Vortex + Auto Color)</span>
+                <button class="copy-btn-small" data-layout-id="card-auto-1">Copy Card Snippet</button>
             </div>
             <div class="cards-container">
-                <div class="card" id="card-1">
+                <div 
+                    class="card" id="card-auto-1"
+                    data-ht-element
+                    data-ht-source="sampleimage.png"
+                    data-ht-grid="8"
+                    data-ht-interaction="vortex"
+                    data-ht-color="auto"
+                    data-ht-contrast="1.5"
+                    data-ht-dot-scale="0.9"
+                >
                     <div class="card-content">
-                        <h3>Interactive Background</h3>
-                        <p style="font-size: 12px; opacity: 0.7;">This halftone panel lives inside a card container.</p>
+                        <h3 style="margin: 0; color: #fff;">Organic Motion</h3>
+                        <p style="font-size: 12px; opacity: 0.7;">Colors sampled directly from source pixels.</p>
                     </div>
                 </div>
-                <div class="card" id="card-2">
+                <div 
+                    class="card" id="card-auto-2"
+                    data-ht-element
+                    data-ht-source="sampleimage.png"
+                    data-ht-grid="12"
+                    data-ht-interaction="magnetic"
+                    data-ht-color="#ff3366"
+                    data-ht-shape="diamond"
+                    data-ht-contrast="2.2"
+                >
                     <div class="card-content">
-                        <h3>Responsive Aspect</h3>
-                        <p style="font-size: 12px; opacity: 0.7;">Each card can have unique settings or share one.</p>
+                        <h3 style="margin: 0; color: #fff;">Magnetic Field</h3>
+                        <p style="font-size: 12px; opacity: 0.7;">Dots rotate to face your cursor position.</p>
                     </div>
                 </div>
-                <div class="card" id="card-3">
+                <div 
+                    class="card" id="card-auto-3"
+                    data-ht-element
+                    data-ht-source="sampleimage.png"
+                    data-ht-grid="15"
+                    data-ht-interaction="ripple"
+                    data-ht-color="#00f2ff"
+                    data-ht-shape="triangle"
+                    data-ht-contrast="1.8"
+                >
                     <div class="card-content">
-                        <h3>Auto Sampling</h3>
-                        <p style="font-size: 12px; opacity: 0.7;">Sample colors from any image for a premium look.</p>
+                        <h3 style="margin: 0; color: #fff;">Wave Physics</h3>
+                        <p style="font-size: 12px; opacity: 0.7;">Propagation effect across the entire grid.</p>
                     </div>
                 </div>
             </div>
         </section>
-
-        <!-- Layout 3: Boxed Section -->
-        <section>
-            <div class="section-header">
-                <span class="demo-label">Layout 3: Boxed Container Background</span>
-                <button class="copy-btn-small" data-layout-id="boxed-panel">Copy Snippet</button>
-            </div>
-            <div class="boxed-layout" id="boxed-panel">
-                <div style="position: absolute; bottom: 40px; right: 40px; z-index: 2;">
-                    <button class="btn active" style="padding: 15px 30px; border-radius: 40px; font-weight: 900; letter-spacing: 1px;">EXPLORE NOW</button>
-                </div>
-            </div>
-        </section>
+    </div>
     </div>
 
     <!-- Hidden image source for global use if needed, but the library also handles URLs directly -->
@@ -363,29 +436,25 @@
     <script type="module">
         import Halftone from './index.js';
 
-        // 1. You can set global defaults (ideal for brand colors)
+        // 1. Set global defaults
         Halftone.defaults.color = '#E85002';
         Halftone.defaults.bgColor = '#050510';
         Halftone.defaults.grid = 12;
 
-        // 2. Initialize multiple panels manually to have references for controls
+        // 2. Collect instances (they are auto-initialized via data-ht-element)
         const instances = [];
-        const seen = new Set();
-        
-        const configMap = {
-            '#hero-panel': { grid: 14, dotScale: 1.0, interaction: 'repulse', contrast: 2.5, brightness: 1.2 },
-            '.card': { grid: 10, dotScale: 0.8, interaction: 'vortex', color: 'auto', contrast: 2.0 },
-            '#boxed-panel': { grid: 12, dotScale: 1.1, interaction: 'attract', contrast: 1.8 }
-        };
-
-        for (const selector in configMap) {
-            document.querySelectorAll(selector).forEach(el => {
-                if (seen.has(el)) return;
-                seen.add(el);
-                const fx = new Halftone({ container: el, source: 'sampleimage.png', ...configMap[selector] });
-                instances.push(fx);
+        const initControls = () => {
+            const els = document.querySelectorAll('[data-ht-element]');
+            els.forEach(el => {
+                if (el.__halftone) instances.push(el.__halftone);
             });
-        }
+            
+            if (instances.length === 0) {
+                requestAnimationFrame(initControls);
+                return;
+            }
+            startListeners();
+        };
 
         // 3. UI Logic: Collapsible
         const controls = document.getElementById('controls');
@@ -394,246 +463,236 @@
         };
 
         // 4. UI Logic: Copy Snippets for sections
-        document.querySelectorAll('.copy-btn-small').forEach(btn => {
-            btn.onclick = () => {
-                const layoutId = btn.dataset.layoutId;
-                const config = instances.find(i => i.root.id === layoutId || i.root.classList.contains(layoutId))?.config || instances[0].config;
-                
-                const code = `
-<!-- Webflow Div -->
-<div id="${layoutId}" style="width: 100%; height: 100%; position: relative; overflow: hidden;"></div>
+        const generateWebflowCode = (layoutId, config) => {
+            return `
+<!-- 1. Halftone Component (Paste into Webflow Embed) -->
+<!-- Note: position:relative and overflow:hidden are required for the background effect -->
+<div 
+    data-ht-element
+    data-ht-source="YOUR_ASSET_URL" 
+    data-ht-grid="${config.grid}"
+    data-ht-gap="${config.gap}"
+    data-ht-dot-scale="${config.dotScale}"
+    data-ht-contrast="${config.contrast}"
+    data-ht-brightness="${config.brightness}"
+    data-ht-color="${config.color}"
+    data-ht-shape="${config.shape}"
+    data-ht-interaction="${config.interaction}"
+    data-ht-radius="${config.radius}"
+    data-ht-strength="${config.strength}"
+    data-ht-spring="${config.spring}"
+    data-ht-stretch="${config.stretch}"
+    style="position: relative; overflow: hidden; width: 100%; height: 100%; min-height: 300px;"
+>
+    <!-- Your content goes here (Buttons, Text, etc) -->
+</div>
 
-<!-- Initialization script -->
-<script type="module">
-    import Halftone from 'https://cdn.jsdelivr.net/gh/devmonks-official/halftone-js@main/dist/halftone.min.js';
-    new Halftone({
-        container: '#${layoutId}',
-        source: 'YOUR_ASSET_URL',
-        grid: ${config.grid},
-        gap: ${config.gap},
-        dotScale: ${config.dotScale},
-        contrast: ${config.contrast},
-        brightness: ${config.brightness},
-        color: '${config.color}',
-        shape: '${config.shape}',
-        interaction: '${config.interaction}'
-    });
-<\\/script>
-                `.trim();
+<!-- 2. Library Script (Add once to Before </body> tag or in the same Embed) -->
+<script type="module" src="https://cdn.jsdelivr.net/gh/devmonks-official/halftone-js@main/dist/halftone.min.js"><\/script>
+            `.trim();
+        };
+
+        const startListeners = () => {
+            document.querySelectorAll('.copy-btn-small').forEach(btn => {
+                btn.onclick = () => {
+                    const layoutId = btn.dataset.layoutId;
+                    const targetEl = document.getElementById(layoutId) || document.querySelector('.' + layoutId);
+                    const config = targetEl?.__halftone?.config || instances[0].config;
+                    
+                    const code = generateWebflowCode(layoutId, config);
+                    
+                    navigator.clipboard.writeText(code).then(() => {
+                        const old = btn.textContent;
+                        btn.textContent = 'COPIED!';
+                        setTimeout(() => btn.textContent = old, 2000);
+                    });
+                };
+            });
+
+            // 5. Global Copy Config Button
+            document.getElementById('copy-config').onclick = () => {
+                const config = instances[0].config;
+                const code = generateWebflowCode('halftone-panel', config);
                 
                 navigator.clipboard.writeText(code).then(() => {
-                    const old = btn.textContent;
+                    const btn = document.getElementById('copy-config');
+                    const oldText = btn.textContent;
                     btn.textContent = 'COPIED!';
-                    setTimeout(() => btn.textContent = old, 2000);
+                    btn.style.background = '#16a34a';
+                    setTimeout(() => {
+                        btn.textContent = oldText;
+                        btn.style.background = '#22c55e';
+                    }, 2000);
                 });
             };
-        });
 
-        // 5. Control Listeners (existing ones updated for instances loop)
-        const updateLabel = (id, val) => {
-            const el = document.getElementById(id + '-val');
-            if (el) el.textContent = val;
-        };
-
-        document.getElementById('interaction').onchange = (e) => {
-            instances.forEach(fx => { if(fx.config) fx.config.interaction = e.target.value; });
-        };
-
-        document.getElementById('shape').onchange = (e) => {
-            instances.forEach(fx => { if(fx.config) fx.config.shape = e.target.value; });
-        };
-
-        document.getElementById('grid').oninput = (e) => {
-            const val = parseInt(e.target.value);
-            instances.forEach(fx => {
-                if(!fx.config) return;
-                fx.config.grid = val;
-                fx.createGrid();
-            });
-            updateLabel('grid', val);
-        };
-
-        document.getElementById('gap').oninput = (e) => {
-            const val = parseInt(e.target.value);
-            instances.forEach(fx => {
-                if(!fx.config) return;
-                fx.config.gap = val;
-                fx.createGrid();
-            });
-            updateLabel('gap', val);
-        };
-
-        document.getElementById('dotScale').oninput = (e) => {
-            const val = parseFloat(e.target.value);
-            instances.forEach(fx => {
-                if(!fx.config) return;
-                fx.config.dotScale = val;
-                fx.createGrid();
-            });
-            updateLabel('dotScale', val.toFixed(1));
-        };
-
-        document.getElementById('contrast').oninput = (e) => {
-            const val = parseFloat(e.target.value);
-            instances.forEach(fx => { if(fx.config) fx.config.contrast = val; });
-            updateLabel('contrast', val.toFixed(1));
-        };
-
-        document.getElementById('brightness').oninput = (e) => {
-            const val = parseFloat(e.target.value);
-            instances.forEach(fx => { if(fx.config) fx.config.brightness = val; });
-            updateLabel('brightness', val.toFixed(1));
-        };
-
-        document.getElementById('radius').oninput = (e) => {
-            const val = parseInt(e.target.value);
-            instances.forEach(fx => { if(fx.config) fx.config.radius = val; });
-            updateLabel('radius', val);
-        };
-
-        document.getElementById('strength').oninput = (e) => {
-            const val = parseFloat(e.target.value);
-            instances.forEach(fx => { if(fx.config) fx.config.strength = val; });
-            updateLabel('strength', val.toFixed(1));
-        };
-
-        document.getElementById('spring').oninput = (e) => {
-            const val = parseFloat(e.target.value);
-            instances.forEach(fx => { if(fx.config) fx.config.spring = val; });
-            updateLabel('spring', val.toFixed(2));
-        };
-
-        document.getElementById('stretch').oninput = (e) => {
-            const val = parseFloat(e.target.value);
-            instances.forEach(fx => { if(fx.config) fx.config.stretch = val; });
-            updateLabel('stretch', val.toFixed(2));
-        };
-
-        document.getElementById('color').oninput = (e) => {
-            instances.forEach(fx => {
-                if(!fx.config) return;
-                // Only update if not using auto-color (Example 2 uses auto)
-                if (fx.config.color !== 'auto') {
-                    fx.config.color = e.target.value;
-                }
-            });
-        };
-
-        // Source Switcher logic
-        const srcBtns = document.querySelectorAll('[data-src-type]');
-        srcBtns.forEach(btn => {
-            btn.onclick = async () => {
-                srcBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                
-                const type = btn.dataset.srcType;
-                let newSource;
-                if (type === 'webcam') newSource = 'webcam';
-                else if (type === 'solid') newSource = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='; // Tiny white pixel
-                else newSource = 'sampleimage.png';
-
-                for (const fx of instances) {
-                    if(!fx.config) continue;
-                    fx.config.source = newSource;
-                    await fx.loadSource();
-                    fx.createGrid();
-                }
+            // 6. Control Listeners (existing ones updated for instances loop)
+            const updateLabel = (id, val) => {
+                const el = document.getElementById(id + '-val');
+                if (el) el.textContent = val;
             };
-        });
 
-        // Image Upload Logic
-        const uploadTrigger = document.getElementById('upload-trigger');
-        const fileInput = document.getElementById('image-upload');
+            document.getElementById('interaction').onchange = (e) => {
+                instances.forEach(fx => { if(fx.config) fx.config.interaction = e.target.value; });
+            };
 
-        uploadTrigger.onclick = () => fileInput.click();
+            document.getElementById('shape').onchange = (e) => {
+                instances.forEach(fx => { if(fx.config) fx.config.shape = e.target.value; });
+            };
 
-        fileInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+            document.getElementById('grid').oninput = (e) => {
+                const val = parseInt(e.target.value);
+                instances.forEach(fx => {
+                    if(!fx.config) return;
+                    fx.config.grid = val;
+                    fx.createGrid();
+                });
+                updateLabel('grid', val);
+            };
 
-            const reader = new FileReader();
-            reader.onload = async (event) => {
-                const newSource = event.target.result;
+            document.getElementById('gap').oninput = (e) => {
+                const val = parseInt(e.target.value);
+                instances.forEach(fx => {
+                    if(!fx.config) return;
+                    fx.config.gap = val;
+                    fx.createGrid();
+                });
+                updateLabel('gap', val);
+            };
+
+            document.getElementById('dotScale').oninput = (e) => {
+                const val = parseFloat(e.target.value);
+                instances.forEach(fx => {
+                    if(!fx.config) return;
+                    fx.config.dotScale = val;
+                    fx.createGrid();
+                });
+                updateLabel('dotScale', val.toFixed(1));
+            };
+
+            document.getElementById('contrast').oninput = (e) => {
+                const val = parseFloat(e.target.value);
+                instances.forEach(fx => { if(fx.config) fx.config.contrast = val; });
+                updateLabel('contrast', val.toFixed(1));
+            };
+
+            document.getElementById('brightness').oninput = (e) => {
+                const val = parseFloat(e.target.value);
+                instances.forEach(fx => { if(fx.config) fx.config.brightness = val; });
+                updateLabel('brightness', val.toFixed(1));
+            };
+
+            document.getElementById('radius').oninput = (e) => {
+                const val = parseInt(e.target.value);
+                instances.forEach(fx => { if(fx.config) fx.config.radius = val; });
+                updateLabel('radius', val);
+            };
+
+            document.getElementById('strength').oninput = (e) => {
+                const val = parseFloat(e.target.value);
+                instances.forEach(fx => { if(fx.config) fx.config.strength = val; });
+                updateLabel('strength', val.toFixed(1));
+            };
+
+            document.getElementById('spring').oninput = (e) => {
+                const val = parseFloat(e.target.value);
+                instances.forEach(fx => { if(fx.config) fx.config.spring = val; });
+                updateLabel('spring', val.toFixed(2));
+            };
+
+            document.getElementById('stretch').oninput = (e) => {
+                const val = parseFloat(e.target.value);
+                instances.forEach(fx => { if(fx.config) fx.config.stretch = val; });
+                updateLabel('stretch', val.toFixed(2));
+            };
+
+            document.getElementById('color').oninput = (e) => {
+                instances.forEach(fx => {
+                    if(!fx.config) return;
+                    // Only update if not using auto-color (Example 2 uses auto)
+                    if (fx.config.color !== 'auto') {
+                        fx.config.color = e.target.value;
+                    }
+                });
+            };
+
+            // Source Switcher logic
+            const srcBtns = document.querySelectorAll('[data-src-type]');
+            srcBtns.forEach(btn => {
+                btn.onclick = async () => {
+                    srcBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    const type = btn.dataset.srcType;
+                    let newSource;
+                    if (type === 'webcam') newSource = 'webcam';
+                    else if (type === 'solid') newSource = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='; // Tiny white pixel
+                    else newSource = 'sampleimage.png';
+
+                    for (const fx of instances) {
+                        if(!fx.config) continue;
+                        fx.config.source = newSource;
+                        await fx.loadSource();
+                        fx.createGrid();
+                    }
+                };
+            });
+
+            // Image Upload Logic
+            const uploadTrigger = document.getElementById('upload-trigger');
+            const fileInput = document.getElementById('image-upload');
+
+            uploadTrigger.onclick = () => fileInput.click();
+
+            fileInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    const newSource = event.target.result;
+                    
+                    // Update active state
+                    srcBtns.forEach(b => b.classList.remove('active'));
+                    uploadTrigger.classList.add('active');
+
+                    for (const fx of instances) {
+                        if(!fx.config) continue;
+                        fx.config.source = newSource;
+                        await fx.loadSource();
+                        fx.createGrid();
+                    }
+                };
+                reader.readAsDataURL(file);
+            };
+
+            // Video Upload Logic
+            const videoTrigger = document.getElementById('video-trigger');
+            const videoInput = document.getElementById('video-upload');
+
+            videoTrigger.onclick = () => videoInput.click();
+
+            videoInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const url = URL.createObjectURL(file);
                 
                 // Update active state
                 srcBtns.forEach(b => b.classList.remove('active'));
-                uploadTrigger.classList.add('active');
+                videoTrigger.classList.add('active');
 
-                for (const fx of instances) {
-                    if(!fx.config) continue;
-                    fx.config.source = newSource;
+                instances.forEach(async fx => {
+                    if(!fx.config) return;
+                    fx.config.source = url;
                     await fx.loadSource();
                     fx.createGrid();
-                }
+                });
             };
-            reader.readAsDataURL(file);
         };
 
-        // Video Upload Logic
-        const videoTrigger = document.getElementById('video-trigger');
-        const videoInput = document.getElementById('video-upload');
-
-        videoTrigger.onclick = () => videoInput.click();
-
-        videoInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const url = URL.createObjectURL(file);
-            
-            // Update active state
-            srcBtns.forEach(b => b.classList.remove('active'));
-            videoTrigger.classList.add('active');
-
-            instances.forEach(async fx => {
-                if(!fx.config) return;
-                fx.config.source = url;
-                await fx.loadSource();
-                fx.createGrid();
-            });
-        };
-
-        // Copy Config Logic
-        document.getElementById('copy-config').onclick = () => {
-            const config = instances[0].config; // Get from first instance
-            const code = `
-<!-- 1. The Container (Add to Webflow as a Div with a custom ID) -->
-<div id="halftone-panel" style="width: 100%; height: 500px; position: relative; overflow: hidden;"></div>
-
-<!-- 2. The Library & Init (Add to Page Settings > Before </body> tag) -->
-<script type="module">
-    import Halftone from 'https://cdn.jsdelivr.net/gh/devmonks-official/halftone-js@main/dist/halftone.min.js';
-
-    new Halftone({
-        container: '#halftone-panel',
-        source: 'YOUR_IMAGE_OR_VIDEO_URL', // Update this
-        grid: ${config.grid},
-        gap: ${config.gap},
-        dotScale: ${config.dotScale},
-        contrast: ${config.contrast},
-        brightness: ${config.brightness},
-        color: '${config.color}',
-        shape: '${config.shape}',
-        interaction: '${config.interaction}',
-        radius: ${config.radius},
-        strength: ${config.strength},
-        spring: ${config.spring},
-        stretch: ${config.stretch}
-    });
-<\\/script>
-            `.trim();
-
-            navigator.clipboard.writeText(code).then(() => {
-                const btn = document.getElementById('copy-config');
-                const oldText = btn.textContent;
-                btn.textContent = 'COPIED!';
-                btn.style.background = '#16a34a';
-                setTimeout(() => {
-                    btn.textContent = oldText;
-                    btn.style.background = '#22c55e';
-                }, 2000);
-            });
-        };
+        // Start initialization loop
+        initControls();
     </script>
 </body>
 </html>

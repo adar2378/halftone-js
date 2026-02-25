@@ -91,7 +91,14 @@ class Halftone {
     
     this.canvas = document.createElement('canvas');
     this.ctx = this.canvas.getContext('2d', { alpha: needsAlpha });
-    this.root.appendChild(this.canvas);
+    
+    // Minimal structural styles for the canvas element itself
+    this.canvas.style.position = 'absolute';
+    this.canvas.style.inset = '0';
+    this.canvas.style.display = 'block';
+    this.canvas.style.pointerEvents = 'none';
+    
+    this.root.prepend(this.canvas);
     
     this.buffer = document.createElement('canvas');
     this.bctx = this.buffer.getContext('2d', { willReadFrequently: true });
@@ -102,7 +109,42 @@ class Halftone {
     this._onLeave = this._onLeave.bind(this);
     this.loop = this.loop.bind(this);
 
+    this._spriteCache = {};
     this.init();
+  }
+
+  _generateSprite(type, size, color) {
+    const key = `${type}-${size}-${color}`;
+    if (this._spriteCache[key]) return this._spriteCache[key];
+
+    const canvas = document.createElement('canvas');
+    const dpr = window.devicePixelRatio || 1;
+    const s = size * dpr;
+    canvas.width = canvas.height = s;
+    const ctx = canvas.getContext('2d');
+    
+    ctx.fillStyle = color;
+    const center = s / 2;
+    const r = s / 2;
+
+    if (type === 'square') {
+        ctx.fillRect(0, 0, s, s);
+    } else if (type === 'diamond') {
+        ctx.beginPath();
+        ctx.moveTo(center, 0); ctx.lineTo(s, center); ctx.lineTo(center, s); ctx.lineTo(0, center);
+        ctx.fill();
+    } else if (type === 'triangle') {
+        ctx.beginPath();
+        ctx.moveTo(center, 0); ctx.lineTo(s, s); ctx.lineTo(0, s);
+        ctx.fill();
+    } else {
+        ctx.beginPath();
+        ctx.arc(center, center, r, 0, PI2);
+        ctx.fill();
+    }
+
+    this._spriteCache[key] = canvas;
+    return canvas;
   }
 
   // --- Interaction Plugins ---
@@ -446,36 +488,37 @@ class Halftone {
     
     const defaultColor = config.color;
     const useAutoColor = defaultColor === 'auto';
-    if (!useAutoColor) ctx.fillStyle = defaultColor;
+    
+    // For single color, we pre-generate a high-res sprite (64px is usually enough for halftone)
+    const baseSprite = !useAutoColor ? this._generateSprite(config.shape, 64, defaultColor) : null;
 
     for (let i = 0, len = this.dots.length; i < len; i++) {
       const d = this.dots[i];
       const size = d.baseSize * d.sizeScalar + (Math.sqrt(d.vx * d.vx + d.vy * d.vy) * 0.1);
       
       if (size < 0.5) continue;
-      ctx.fillStyle = d.color || defaultColor;
 
       const v2 = d.vx * d.vx + d.vy * d.vy;
       const hasRotation = Math.abs(d.rotation) > 0.01;
       const hasStretch = v2 > 1.5;
+      
+      const sprite = useAutoColor ? this._generateSprite(config.shape, 32, d.color) : baseSprite;
 
-      if (hasRotation || hasStretch) {
-        ctx.save();
-        ctx.translate(d.x, d.y);
-        if (hasRotation) {
-          ctx.rotate(d.rotation);
-        } else {
-          const v = Math.sqrt(v2);
-          ctx.rotate(Math.atan2(d.vy, d.vx));
-          const stretch = 1 + (v * config.stretch);
-          ctx.scale(stretch, 1 / stretch);
-        }
-        this._drawShape(ctx, config.shape, size);
-        ctx.restore();
-      } else {
-        // High-performance direct draw path
-        this._drawShapeDirect(ctx, config.shape, d.x, d.y, size);
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      
+      if (hasRotation) {
+        ctx.rotate(d.rotation);
+      } else if (hasStretch) {
+        const v = Math.sqrt(v2);
+        ctx.rotate(Math.atan2(d.vy, d.vx));
+        const stretch = 1 + (v * config.stretch);
+        ctx.scale(stretch, 1 / stretch);
       }
+
+      // Draw the sprite centered
+      ctx.drawImage(sprite, -size/2, -size/2, size, size);
+      ctx.restore();
     }
   }
 

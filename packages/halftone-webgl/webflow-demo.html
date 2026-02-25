@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HalftoneWebGL — Webflow Integration</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0f;
+      color: #e0e0e0;
+    }
+
+    /* Hero section simulating Webflow layout */
+    .hero {
+      position: relative;
+      width: 100%;
+      height: 80vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 40px;
+    }
+    .hero-content h1 {
+      font-size: 64px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      color: #fff;
+      text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+    }
+    .hero-content p {
+      font-size: 20px;
+      color: #ccc;
+      margin-top: 16px;
+      max-width: 600px;
+    }
+
+    /* Sections */
+    .section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 60px 24px;
+    }
+    .section h2 {
+      font-size: 28px;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+    .section p {
+      color: #999;
+      line-height: 1.7;
+      margin-bottom: 16px;
+    }
+
+    /* Code blocks */
+    .code-block {
+      position: relative;
+      background: #111118;
+      border: 1px solid #222;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 16px 0;
+      overflow-x: auto;
+    }
+    .code-block pre {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #c8d3e0;
+    }
+    .code-block .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #333;
+      border: none;
+      color: #aaa;
+      padding: 4px 10px;
+      font-size: 11px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .code-block .copy-btn:hover { background: #444; color: #fff; }
+
+    /* Grid demo */
+    .demo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 24px 0;
+    }
+    .demo-card {
+      position: relative;
+      height: 300px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #222;
+    }
+    .demo-card .label {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      z-index: 2;
+      background: rgba(0,0,0,0.7);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <!-- Hero with data attributes -->
+  <div class="hero"
+       data-hwgl-element
+       data-hwgl-source="../sampleimage.png"
+       data-hwgl-frequency="50"
+       data-hwgl-interaction="reveal"
+       data-hwgl-color="#E85002"
+       data-hwgl-bg-color="#050510"
+       data-hwgl-softness="0.4">
+    <div class="hero-content">
+      <h1>HalftoneWebGL</h1>
+      <p>GPU-accelerated halftone effects. No getImageData. No Three.js. Just pure shader performance at ~25KB gzipped.</p>
+    </div>
+  </div>
+
+  <!-- Basic usage -->
+  <div class="section">
+    <h2>1. Quick Start (Webflow)</h2>
+    <p>Add the script tag to your Webflow project's custom code, then use data attributes on any div.</p>
+
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      <pre>&lt;!-- Add to Webflow Site Settings → Custom Code → Footer --&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/halftone-webgl/dist/halftone-webgl.min.js"&gt;&lt;/script&gt;</pre>
+    </div>
+
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      <pre>&lt;!-- Add data-hwgl-element to any Webflow div --&gt;
+&lt;div data-hwgl-element
+     data-hwgl-source="https://your-site.com/hero.jpg"
+     data-hwgl-frequency="50"
+     data-hwgl-interaction="reveal"
+     style="position: relative; width: 100%; height: 80vh;"&gt;
+  &lt;!-- Your Webflow content goes here (above the canvas) --&gt;
+&lt;/div&gt;</pre>
+    </div>
+  </div>
+
+  <!-- JS API -->
+  <div class="section">
+    <h2>2. JavaScript API</h2>
+    <p>For full control, create an instance programmatically.</p>
+
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      <pre>const ht = new HalftoneWebGL({
+  container: '#hero',
+  source: 'hero.jpg',
+  frequency: 50,
+  shape: 'circle',
+  colorMode: 'mono',
+  color: '#E85002',
+  bgColor: '#050510',
+  interaction: 'reveal',
+  radius: 0.3,
+  strength: 0.5,
+});
+
+// Update any property at runtime
+ht.set('frequency', 80);
+ht.set({ shape: 'diamond', contrast: 2.5 });
+
+// Load new media
+await ht.loadSource('video.mp4');
+await ht.loadSource('webcam');
+
+// Events
+ht.on('ready', () =&gt; console.log('First frame rendered'));
+ht.on('error', (err) =&gt; console.error(err));
+
+// Cleanup
+ht.destroy();</pre>
+    </div>
+  </div>
+
+  <!-- Showcase grid -->
+  <div class="section">
+    <h2>3. Color Modes</h2>
+    <p>Switch between mono, auto (source colors), CMYK separation, and duotone.</p>
+
+    <div class="demo-grid">
+      <div class="demo-card"
+           data-hwgl-element
+           data-hwgl-source="../sampleimage.png"
+           data-hwgl-frequency="45"
+           data-hwgl-color-mode="mono"
+           data-hwgl-color="#E85002"
+           data-hwgl-interaction="magnify">
+        <span class="label">mono + magnify</span>
+      </div>
+      <div class="demo-card"
+           data-hwgl-element
+           data-hwgl-source="../sampleimage.png"
+           data-hwgl-frequency="45"
+           data-hwgl-color-mode="auto"
+           data-hwgl-interaction="warp">
+        <span class="label">auto + warp</span>
+      </div>
+      <div class="demo-card"
+           data-hwgl-element
+           data-hwgl-source="../sampleimage.png"
+           data-hwgl-frequency="35"
+           data-hwgl-color-mode="cmyk"
+           data-hwgl-interaction="ripple">
+        <span class="label">cmyk + ripple</span>
+      </div>
+      <div class="demo-card"
+           data-hwgl-element
+           data-hwgl-source="../sampleimage.png"
+           data-hwgl-frequency="45"
+           data-hwgl-color-mode="duotone"
+           data-hwgl-color="#FF6B35"
+           data-hwgl-color-b="#004E89"
+           data-hwgl-bg-color="#0a0a0f"
+           data-hwgl-interaction="vortex">
+        <span class="label">duotone + vortex</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dynamic control from Webflow -->
+  <div class="section">
+    <h2>4. Control from Webflow Custom Code</h2>
+    <p>Access any auto-initialized instance via <code>el.__halftoneWebGL</code>.</p>
+
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      <pre>&lt;script&gt;
+// Access auto-initialized instance
+const hero = document.querySelector('[data-hwgl-element]');
+const ht = hero.__halftoneWebGL;
+
+// React to Webflow interactions
+hero.addEventListener('click', () =&gt; {
+  ht.set('shape', ht.config.shape === 'circle' ? 'diamond' : 'circle');
+});
+
+// Listen for events
+ht.on('ready', () =&gt; {
+  console.log('Halftone ready!');
+});
+&lt;/script&gt;</pre>
+    </div>
+  </div>
+
+  <script src="dist/halftone-webgl.min.js"></script>
+  <script>
+    function copyCode(btn) {
+      const code = btn.parentElement.querySelector('pre').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy', 1500);
+      });
+    }
+  </script>
+</body>
+</html>
