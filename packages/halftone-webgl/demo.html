@@ -551,6 +551,46 @@
   </div>
 
   <!-- ════════════════════════════════════════════════════════════
+       Video Sources
+       ════════════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">Video Sources</div>
+    <div class="card-grid">
+
+      <!-- Video A — auto color, sparkle -->
+      <div class="card-container"
+           data-hwgl-element
+           data-hwgl-source="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+           data-hwgl-interaction="sparkle"
+           data-hwgl-color-mode="auto"
+           data-hwgl-frequency="35"
+           data-hwgl-softness="0.4">
+        <div class="card-content">
+          <h3>Video + Auto Color</h3>
+          <p>Halftone effects work with video sources — just pass a <code style="color:#E85002">.mp4</code> URL. Continuous rendering at 60fps.</p>
+        </div>
+      </div>
+
+      <!-- Video B — mono, warp -->
+      <div class="card-container"
+           data-hwgl-element
+           data-hwgl-source="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4"
+           data-hwgl-interaction="warp"
+           data-hwgl-shape="line"
+           data-hwgl-color-mode="mono"
+           data-hwgl-color="#00D4AA"
+           data-hwgl-bg-color="#0a0a0f"
+           data-hwgl-frequency="45">
+        <div class="card-content">
+          <h3>Video + Mono Lines</h3>
+          <p>Combine video with any shape and color mode. Set <code style="color:#00D4AA">source: 'video.mp4'</code> via data attributes or JS API.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
        Section 3 — Content Overlay Cards
        Content is a child of the halftone container. Text is
        selectable, buttons/links pause the interaction on hover.

@@ -36,6 +36,26 @@ Add a script tag and use data attributes — no build step needed.
 
 The library auto-initializes on `DOMContentLoaded` for every element with `data-hwgl-element`.
 
+### Video Source
+
+```html
+<div data-hwgl-element
+     data-hwgl-source="video.mp4"
+     data-hwgl-interaction="sparkle"
+     style="width: 100%; height: 400px;">
+</div>
+```
+
+### Webcam Source
+
+```html
+<div data-hwgl-element
+     data-hwgl-source="webcam"
+     data-hwgl-interaction="warp"
+     style="width: 100%; height: 400px;">
+</div>
+```
+
 ## Quick Start (npm)
 
 ```bash

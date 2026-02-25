@@ -407,6 +407,22 @@
   <span class="tag">&lt;h1&gt;</span>Your content here<span class="tag">&lt;/h1&gt;</span>
 <span class="tag">&lt;/div&gt;</span></code></pre>
 
+      <h3>Video Source</h3>
+      <p>Pass a video URL to <code>data-hwgl-source</code> for looping video halftone effects.</p>
+<pre><code><span class="tag">&lt;div</span> <span class="attr">data-hwgl-element</span>
+     <span class="attr">data-hwgl-source</span>=<span class="val">"video.mp4"</span>
+     <span class="attr">data-hwgl-interaction</span>=<span class="val">"sparkle"</span>
+     <span class="attr">style</span>=<span class="val">"width: 100%; height: 400px;"</span><span class="tag">&gt;</span>
+<span class="tag">&lt;/div&gt;</span></code></pre>
+
+      <h3>Webcam Source</h3>
+      <p>Use <code>"webcam"</code> as the source to request camera access on load.</p>
+<pre><code><span class="tag">&lt;div</span> <span class="attr">data-hwgl-element</span>
+     <span class="attr">data-hwgl-source</span>=<span class="val">"webcam"</span>
+     <span class="attr">data-hwgl-interaction</span>=<span class="val">"warp"</span>
+     <span class="attr">style</span>=<span class="val">"width: 100%; height: 400px;"</span><span class="tag">&gt;</span>
+<span class="tag">&lt;/div&gt;</span></code></pre>
+
       <h3>JavaScript API</h3>
 <pre><code><span class="keyword">const</span> ht = <span class="keyword">new</span> HalftoneWebGL({
   container: <span class="string">'#my-element'</span>,
