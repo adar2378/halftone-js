@@ -296,8 +296,8 @@ void main() {
       // Smooth wave driven by cursor movement (not time)
       float wave = sin(dot(uMouse, vec2(25.0, 19.0)) + phase) * 0.5 + 0.5;
 
-      // Center (high heat) stays uniformly bright, edges get noisy scatter
-      float noise = mix(wave, 1.0, heat * heat);
+      // Noise everywhere — reduced at center, stronger at edges
+      float noise = mix(wave, 1.0, heat * heat * 0.7);
       sparkleAmount = heat * noise * uMouseActive * uStrength;
     }
   }

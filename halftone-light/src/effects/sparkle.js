@@ -36,15 +36,16 @@ export default {
   },
 
   update(state) {
-    const { mouse, mouseActive } = state;
+    const { mouse, mouseActive, velocity } = state;
     const ctx = this._ctx;
 
     // 1. Fade the trail canvas
     ctx.fillStyle = `rgba(0,0,0,${this._fadeAlpha})`;
     ctx.fillRect(0, 0, TRAIL_SIZE, TRAIL_SIZE);
 
-    // 2. Draw soft glow at cursor position
-    if (mouseActive > 0.1) {
+    // 2. Draw soft glow only when cursor is moving
+    const speed = Math.sqrt(velocity[0] * velocity[0] + velocity[1] * velocity[1]);
+    if (mouseActive > 0.1 && speed > 0.0005) {
       const x = mouse[0] * TRAIL_SIZE;
       const y = (1.0 - mouse[1]) * TRAIL_SIZE;
 
