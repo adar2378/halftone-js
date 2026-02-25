@@ -1,188 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Halftone.js - Master Showcase</title>
-    <style>
-        body { margin: 0; background: #050510; color: #fff; font-family: 'Inter', system-ui, sans-serif; overflow: hidden; }
-        .ui-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 100; display: flex; flex-direction: column; justify-content: space-between; padding: 30px; }
-        .top-left h1 { margin: 0; font-size: 32px; font-weight: 900; letter-spacing: -1px; color: #E85002; text-transform: uppercase; }
-        .top-left p { margin: 5px 0 0; font-size: 14px; opacity: 0.6; }
-        
-        .controls { position: absolute; top: 30px; right: 30px; z-index: 1000; width: 280px; background: rgba(10, 10, 30, 0.8); backdrop-filter: blur(20px); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); pointer-events: auto; }
-        .control-group { margin-bottom: 15px; }
-        .control-group label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; color: #6a7090; }
-        select, input[type="range"] { width: 100%; background: #1a1a3a; color: #fff; border: 1px solid #2a2a50; border-radius: 6px; padding: 8px; cursor: pointer; }
-        
-        .source-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-        .btn { background: #1a1a3a; border: 1px solid #2a2a50; color: #fff; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
-        .btn.active { background: #E85002; color: #050510; border-color: #E85002; font-weight: 700; }
-        
-        #ht-canvas-container { position: absolute; inset: 0; z-index: 1; }
-        .hint { font-size: 12px; text-align: center; opacity: 0.4; }
-        #video-source { display: none; }
-        #image-source { display: none; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Halftone — Monorepo</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0f;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+    }
+
+    h1 {
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 15px;
+      color: #666;
+      margin-bottom: 48px;
+    }
+
+    .packages {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      max-width: 720px;
+      width: 100%;
+    }
+
+    .card {
+      background: #111118;
+      border: 1px solid #1e1e28;
+      border-radius: 16px;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+    .card:hover {
+      border-color: #333;
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .card-icon.js { background: #E85002; color: #fff; }
+    .card-icon.webgl { background: #6B5CE7; color: #fff; }
+
+    .card h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .card-desc {
+      font-size: 14px;
+      color: #888;
+      line-height: 1.6;
+    }
+
+    .card-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .tag {
+      padding: 4px 10px;
+      background: #1a1a24;
+      border: 1px solid #252530;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #888;
+    }
+
+    .card-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      background: #1a1a24;
+      border: 1px solid #252530;
+      border-radius: 8px;
+      color: #ddd;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.15s;
+      align-self: flex-start;
+    }
+    .card-link:hover {
+      background: #252530;
+    }
+    .card-link svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    footer {
+      margin-top: 48px;
+      font-size: 12px;
+      color: #333;
+    }
+
+    @media (max-width: 600px) {
+      .packages { grid-template-columns: 1fr; }
+      h1 { font-size: 36px; }
+    }
+  </style>
 </head>
 <body>
 
-    <div id="ht-canvas-container"></div>
+  <h1>halftone</h1>
+  <p class="subtitle">Interactive halftone effects for the web</p>
 
-    <div class="ui-overlay">
-        <div class="top-left">
-            <h1>Halftone.js</h1>
-            <p>Physics-Driven Interactions v1.0.0</p>
-        </div>
-        <div class="bottom-center hint">
-            17 Elite Presets • Dynamic Attributes • Plugin Ready
-        </div>
+  <div class="packages">
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon js">JS</div>
+        <h2>halftone-js</h2>
+      </div>
+      <p class="card-desc">
+        Canvas 2D engine with physics-driven dot simulation. Zero dependencies, ~4KB gzipped.
+      </p>
+      <div class="card-meta">
+        <span class="tag">Canvas 2D</span>
+        <span class="tag">CPU</span>
+        <span class="tag">Physics</span>
+        <span class="tag">~4KB</span>
+      </div>
+      <a class="card-link" href="packages/halftone-js/">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 3l5 5-5 5"/></svg>
+        View Package
+      </a>
     </div>
 
-    <aside class="controls">
-        <div class="control-group">
-            <label>Interaction Mode</label>
-            <select id="interaction">
-                <option value="repulse">Repulse (Push)</option>
-                <option value="attract">Attract (Pull)</option>
-                <option value="vortex">Vortex (Swirl)</option>
-                <option value="magnetic">Magnetic (Face)</option>
-                <option value="gravity">Gravity (Fall)</option>
-                <option value="drift">Drift (Space)</option>
-                <option value="twist">Twist (Spin)</option>
-                <option value="float">Float (Bubbles)</option>
-                <option value="frenzy">Frenzy (Chaos)</option>
-                <option value="warp">Warp (Elastic)</option>
-                <option value="bounce">Bounce (Jump)</option>
-                <option value="shatter">Shatter (Burst)</option>
-                <option value="ripple">Ripple (Wave)</option>
-                <option value="swell">Swell (Lens)</option>
-                <option value="glitch">Glitch (Cyber)</option>
-                <option value="wind">Wind (Blower)</option>
-                <option value="pulse">Pulse (Breathe)</option>
-            </select>
-        </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon webgl">GL</div>
+        <h2>halftone-webgl</h2>
+      </div>
+      <p class="card-desc">
+        GPU-accelerated WebGL engine using fragment shaders. CMYK, interactions, trails. ~21KB gzipped.
+      </p>
+      <div class="card-meta">
+        <span class="tag">WebGL</span>
+        <span class="tag">GPU</span>
+        <span class="tag">Shaders</span>
+        <span class="tag">~21KB</span>
+      </div>
+      <a class="card-link" href="packages/halftone-webgl/demo.html">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 3l5 5-5 5"/></svg>
+        View Demo
+      </a>
+      <a class="card-link" href="packages/halftone-webgl/docs.html">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 3l5 5-5 5"/></svg>
+        Documentation
+      </a>
+    </div>
 
-        <div class="control-group">
-            <label>Data Source</label>
-            <div class="source-grid">
-                <button class="btn" data-source="none">None</button>
-                <button class="btn active" data-source="image">Image</button>
-                <button class="btn" data-source="video">Video</button>
-                <button class="btn" data-source="webcam">Webcam</button>
-            </div>
-        </div>
+  </div>
 
-        <div class="control-group">
-            <label>Dot Shape</label>
-            <select id="shape">
-                <option value="circle">Circle</option>
-                <option value="square">Square</option>
-                <option value="diamond">Diamond</option>
-                <option value="triangle">Triangle</option>
-            </select>
-        </div>
+  <footer>MIT License</footer>
 
-        <div class="control-group">
-            <label>Grid Density <span id="grid-val">14</span></label>
-            <input type="range" id="grid" min="6" max="30" value="14">
-        </div>
-
-        <div class="control-group">
-            <label>Interaction Radius <span id="radius-val">120</span></label>
-            <input type="range" id="radius" min="50" max="500" value="120">
-        </div>
-
-        <div class="control-group">
-            <label>Spring Tension <span id="spring-val">0.10</span></label>
-            <input type="range" id="spring" min="0.01" max="0.3" step="0.01" value="0.10">
-        </div>
-
-        <div class="control-group">
-            <label>Stretch Force <span id="stretch-val">0.20</span></label>
-            <input type="range" id="stretch" min="0" max="0.6" step="0.01" value="0.20">
-        </div>
-
-        <div class="control-group">
-            <label>Main Color</label>
-            <input type="color" id="color" value="#E85002">
-        </div>
-    </aside>
-
-    <video id="video-source" loop muted crossorigin="anonymous" src=""></video>
-    <img id="image-source" crossOrigin="anonymous" src="sampleimage.png">
-
-    <script type="module">
-        import Halftone from './index.js';
-
-        setTimeout(async () => {
-            const container = document.getElementById('ht-canvas-container');
-            const fx = new Halftone({ 
-                container: container,
-                grid: 14,
-                color: '#E85002',
-                source: '#image-source'
-            });
-            await fx.loadSource();
-            fx.createGrid();
-
-            const updateLabel = (id, val) => {
-                const el = document.getElementById(id + '-val');
-                if (el) el.textContent = val;
-            };
-
-            document.getElementById('interaction').onchange = (e) => {
-                fx.config.interaction = e.target.value;
-            };
-
-            document.getElementById('grid').oninput = (e) => {
-                const val = parseInt(e.target.value);
-                fx.config.grid = val; 
-                fx.createGrid(); 
-                updateLabel('grid', val);
-            };
-
-            document.getElementById('radius').oninput = (e) => {
-                const val = parseInt(e.target.value);
-                fx.config.radius = val; 
-                updateLabel('radius', val);
-            };
-
-            document.getElementById('spring').oninput = (e) => {
-                const val = parseFloat(e.target.value);
-                fx.config.spring = val; 
-                updateLabel('spring', val.toFixed(2));
-            };
-
-            document.getElementById('stretch').oninput = (e) => {
-                const val = parseFloat(e.target.value);
-                fx.config.stretch = val; 
-                updateLabel('stretch', val.toFixed(2));
-            };
-
-            document.getElementById('shape').onchange = (e) => {
-                fx.config.shape = e.target.value;
-            };
-
-            document.getElementById('color').oninput = (e) => {
-                fx.config.color = e.target.value;
-            };
-
-            const sourceButtons = document.querySelectorAll('.btn[data-source]');
-            sourceButtons.forEach(btn => {
-                btn.onclick = async () => {
-                    sourceButtons.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    const src = btn.dataset.source;
-                    if (src === 'none') { fx.config.source = null; fx.sourceReady = false; }
-                    else if (src === 'image') { fx.config.source = '#image-source'; }
-                    else if (src === 'video') { fx.config.source = '#video-source'; }
-                    else if (src === 'webcam') { fx.config.source = 'webcam'; }
-                    await fx.loadSource();
-                    fx.createGrid();
-                };
-            });
-        }, 0);
-    </script>
 </body>
 </html>

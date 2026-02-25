@@ -14,6 +14,7 @@ uniform float uAngle;
 uniform int uShape;        // 0=circle, 1=square, 2=diamond, 3=line, 4=cross, 5=ellipse
 uniform float uScale;
 uniform float uSoftness;
+uniform float uGap;
 
 // Tone
 uniform float uContrast;
@@ -34,12 +35,17 @@ uniform float uSourceAspect;
 uniform float uContainerAspect;
 
 // Interaction
-uniform int uInteraction;  // 0=none, 1=reveal, 2=magnify, 3=warp, 4=ripple, 5=vortex, 6=colorShift, 7=focus
+uniform int uInteraction;  // 0=none, 1=reveal, 2=magnify, 3=warp, 4=ripple, 5=vortex, 6=colorShift, 7=focus, 8=comet
 uniform vec2 uMouse;       // normalized 0-1
 uniform float uMouseActive;
 uniform float uRadius;
 uniform float uStrength;
 uniform float uTime;
+
+// Trail (comet effect)
+uniform sampler2D uTrail;
+uniform vec2 uVelocity;
+uniform float uHasTrail;
 
 // ─── Helpers ───
 
@@ -50,6 +56,12 @@ mat2 rot2d(float a) {
 
 float luminance(vec3 c) {
   return dot(c, vec3(0.299, 0.587, 0.114));
+}
+
+float hash21(vec2 p) {
+  p = fract(p * vec2(233.34, 851.73));
+  p += dot(p, p + 23.45);
+  return fract(p.x * p.y);
 }
 
 // ─── Fit UV ───
@@ -134,8 +146,12 @@ vec4 rgbToCMYK(vec3 rgb) {
 // ─── Single-channel halftone ───
 
 float halftoneChannel(vec2 uv, float freq, float angleRad, float dotSize, int shape, float softness) {
+  // Aspect-correct UV so grid cells are square in screen space
+  vec2 aspectUV = vec2(uv.x * uContainerAspect, uv.y);
+  vec2 aspectCenter = vec2(0.5 * uContainerAspect, 0.5);
+
   // Rotate UV by screen angle
-  vec2 rotUV = rot2d(angleRad) * (uv - 0.5) + 0.5;
+  vec2 rotUV = rot2d(angleRad) * (aspectUV - aspectCenter) + aspectCenter;
 
   // Scale to grid
   vec2 gridUV = rotUV * freq;
@@ -150,7 +166,7 @@ float halftoneChannel(vec2 uv, float freq, float angleRad, float dotSize, int sh
   float dist = getSDF(p, shape);
 
   // Dot radius from intensity
-  float radius = dotSize * uScale * 0.5;
+  float radius = max(dotSize * uScale * 0.5 - uGap * 0.5, 0.0);
 
   // Anti-aliased edge
   float edgeWidth = softness * 0.15 + 0.01;
@@ -175,7 +191,7 @@ InteractionResult computeInteraction(vec2 uv) {
   r.reveal = 0.0;
   r.hueShift = 0.0;
 
-  if (uInteraction == 0 || uMouseActive < 0.01) return r;
+  if (uInteraction == 0 || uInteraction == 9 || uMouseActive < 0.01) return r;
 
   vec2 aspect = vec2(uContainerAspect, 1.0);
   vec2 delta = (uv - uMouse) * aspect;
@@ -212,7 +228,14 @@ InteractionResult computeInteraction(vec2 uv) {
   else if (uInteraction == 7) { // focus
     r.freqMul = 1.0 + active * 2.0;
   }
-
+  else if (uInteraction == 8 && uHasTrail > 0.5) { // comet
+    float heat = texture2D(uTrail, uv).r;
+    r.sizeMul = 1.0 + heat * uStrength * 2.0;
+    float speed = length(uVelocity);
+    if (speed > 0.001) {
+      r.uv = uv + normalize(uVelocity) * heat * 0.02;
+    }
+  }
   return r;
 }
 
@@ -245,24 +268,49 @@ void main() {
   vec2 gridUV = interact.uv;
   float freq = uFrequency * interact.freqMul;
 
+  // Compute cell info (needed for sparkle + texture sampling)
+  // Aspect-correct to match halftoneChannel grid
+  vec2 aspectUV = vec2(gridUV.x * uContainerAspect, gridUV.y);
+  vec2 aspectCenter = vec2(0.5 * uContainerAspect, 0.5);
+  vec2 rotUV = rot2d(uAngle) * (aspectUV - aspectCenter) + aspectCenter;
+  vec2 cellGridUV = rotUV * freq;
+  vec2 cellIdx = floor(cellGridUV);
+  vec2 cellCenter = (cellIdx + 0.5) / freq;
+  // Un-rotate, then un-aspect to get back to [0,1] UV for texture sampling
+  vec2 cellAspectUV = rot2d(-uAngle) * (cellCenter - aspectCenter) + aspectCenter;
+  vec2 cellWorldUV = vec2(cellAspectUV.x / uContainerAspect, cellAspectUV.y);
+
   // Sample source texture
-  vec2 texUV = fitUV(gridUV);
   vec3 srcColor = vec3(0.0);
   float srcLuma = 0.5;
 
   if (uHasTexture > 0.5) {
-    // Sample at cell center for crisp halftone
-    vec2 rotUV = rot2d(uAngle) * (gridUV - 0.5) + 0.5;
-    vec2 cellGridUV = rotUV * freq;
-    vec2 cell = (floor(cellGridUV) + 0.5) / freq;
-    vec2 cellWorldUV = rot2d(-uAngle) * (cell - 0.5) + 0.5;
     vec2 cellTexUV = fitUV(cellWorldUV);
-
     srcColor = texture2D(uTexture, clamp(cellTexUV, 0.0, 1.0)).rgb;
     srcLuma = luminance(srcColor);
   }
 
   float dotSize = toneCurve(srcLuma) * interact.sizeMul;
+
+  // Sparkle: trail heatmap + per-cell noise for irregular, movement-driven sparkle
+  float sparkleAmount = 0.0;
+
+  if (uInteraction == 9 && uHasTrail > 0.5 && uMouseActive > 0.01) {
+    float heat = texture2D(uTrail, uv).r;
+
+    if (heat > 0.01) {
+      // Per-cell random phase — each cell oscillates differently
+      float h = hash21(cellIdx);
+      float phase = h * 6.2832;
+
+      // Smooth wave driven by cursor movement (not time)
+      float wave = sin(dot(uMouse, vec2(25.0, 19.0)) + phase) * 0.5 + 0.5;
+
+      // Noise everywhere — reduced at center, stronger at edges
+      float noise = mix(wave, 1.0, heat * heat * 0.7);
+      sparkleAmount = heat * noise * uMouseActive * uStrength;
+    }
+  }
 
   vec3 finalColor;
 
@@ -273,6 +321,12 @@ void main() {
     float mDot = toneCurve(1.0 - cmyk.y) * interact.sizeMul;
     float yDot = toneCurve(1.0 - cmyk.z) * interact.sizeMul;
     float kDot = toneCurve(1.0 - cmyk.w) * interact.sizeMul;
+
+    // Sparkle: push CMYK dots toward max size near cursor
+    cDot = mix(cDot, 1.0, sparkleAmount);
+    mDot = mix(mDot, 1.0, sparkleAmount);
+    yDot = mix(yDot, 1.0, sparkleAmount);
+    kDot = mix(kDot, 1.0, sparkleAmount);
 
     float cMask = halftoneChannel(gridUV, freq, uCmykAngles.x, cDot, uShape, uSoftness);
     float mMask = halftoneChannel(gridUV, freq, uCmykAngles.y, mDot, uShape, uSoftness);
@@ -290,6 +344,7 @@ void main() {
   }
   else {
     // ─── Single-channel halftone ───
+    dotSize = mix(dotSize, 1.0, sparkleAmount);
     float mask = halftoneChannel(gridUV, freq, uAngle, dotSize, uShape, uSoftness);
 
     vec3 dotColor;

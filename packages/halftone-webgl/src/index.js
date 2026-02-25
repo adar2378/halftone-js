@@ -9,8 +9,10 @@ import {
   isVideoTexture,
   updateVideoTexture,
 } from './texture.js';
+import createCometEffect from './effects/comet.js';
+import createSparkleEffect from './effects/sparkle.js';
 
-class HalftoneLight extends EventEmitter {
+class HalftoneWebGL extends EventEmitter {
   constructor(options = {}) {
     super();
 
@@ -19,7 +21,7 @@ class HalftoneLight extends EventEmitter {
       ? document.querySelector(options.container)
       : options.container;
 
-    if (!container) throw new Error('[HalftoneLight] Container not found');
+    if (!container) throw new Error('[HalftoneWebGL] Container not found');
 
     this.container = container;
 
@@ -39,6 +41,9 @@ class HalftoneLight extends EventEmitter {
     this._hasVideo = false;
     this._hasInteraction = this._config.interaction !== 'none';
     this._destroyed = false;
+    this._prevMouse = [0, 0];
+    this._velocity = [0, 0];
+    this._activeEffect = null;
 
     // Create WebGL renderer
     try {
@@ -58,14 +63,19 @@ class HalftoneLight extends EventEmitter {
     // Bind methods
     this._onResize = this._onResize.bind(this);
     this._onMouseMove = this._onMouseMove.bind(this);
-    this._onMouseEnter = this._onMouseEnter.bind(this);
-    this._onMouseLeave = this._onMouseLeave.bind(this);
     this._onTouchMove = this._onTouchMove.bind(this);
     this._onTouchEnd = this._onTouchEnd.bind(this);
     this._loop = this._loop.bind(this);
 
     // Set up events
     this._setupEvents();
+
+    // Set up trail-based effects if initial interaction requires one
+    if (this._config.interaction === 'comet') {
+      this._setupEffect('comet');
+    } else if (this._config.interaction === 'sparkle') {
+      this._setupEffect('sparkle');
+    }
 
     // Load source if provided
     if (this._config.source) {
@@ -80,7 +90,7 @@ class HalftoneLight extends EventEmitter {
     this._updatePlayState();
 
     // Expose instance on element for Webflow access
-    container.__halftoneLight = this;
+    container.__halftoneWebGL = this;
   }
 
   // ─── Public Properties ───
@@ -205,13 +215,12 @@ class HalftoneLight extends EventEmitter {
 
   destroy() {
     this._destroyed = true;
+    this._teardownEffect();
     this.pause();
 
     // Remove event listeners
     window.removeEventListener('resize', this._onResize);
     window.removeEventListener('mousemove', this._onMouseMove);
-    this.container.removeEventListener('mouseenter', this._onMouseEnter);
-    this.container.removeEventListener('mouseleave', this._onMouseLeave);
     this.container.removeEventListener('touchmove', this._onTouchMove);
     this.container.removeEventListener('touchend', this._onTouchEnd);
 
@@ -236,11 +245,39 @@ class HalftoneLight extends EventEmitter {
     // Clean up OGL
     this._renderer.gl.getExtension('WEBGL_lose_context')?.loseContext();
 
-    delete this.container.__halftoneLight;
+    delete this.container.__halftoneWebGL;
     super.destroy();
   }
 
   // ─── Internal ───
+
+  _setupEffect(name) {
+    this._teardownEffect();
+    let effect;
+    if (name === 'comet') {
+      effect = createCometEffect();
+      const { trailTexture } = effect.setup(this._gl);
+      this._uniforms.uTrail.value = trailTexture;
+      this._uniforms.uHasTrail.value = 1;
+      this._activeEffect = effect;
+    } else if (name === 'sparkle') {
+      effect = createSparkleEffect();
+      const { trailTexture } = effect.setup(this._gl, this._config);
+      this._uniforms.uTrail.value = trailTexture;
+      this._uniforms.uHasTrail.value = 1;
+      this._activeEffect = effect;
+    }
+  }
+
+  _teardownEffect() {
+    if (this._activeEffect) {
+      this._activeEffect.teardown();
+      this._uniforms.uTrail.value = this._defaultTexture;
+      this._uniforms.uHasTrail.value = 0;
+      this._uniforms.uVelocity.value = [0, 0];
+      this._activeEffect = null;
+    }
+  }
 
   _updateConfig(key, value) {
     this._config[key] = value;
@@ -248,7 +285,17 @@ class HalftoneLight extends EventEmitter {
 
     if (key === 'interaction') {
       this._hasInteraction = value !== 'none';
+      if (value === 'comet') {
+        this._setupEffect('comet');
+      } else if (value === 'sparkle') {
+        this._setupEffect('sparkle');
+      } else {
+        this._teardownEffect();
+      }
       this._updatePlayState();
+    }
+    if (key === 'trailFade' && this._activeEffect && this._activeEffect.setFade) {
+      this._activeEffect.setFade(value);
     }
     if (key === 'source') {
       this.loadSource(value).catch(e => this.emit('error', e));
@@ -263,10 +310,8 @@ class HalftoneLight extends EventEmitter {
       this._resizeObserver.observe(this.container);
     }
 
-    // Mouse
+    // Mouse — single window listener handles position + active state
     window.addEventListener('mousemove', this._onMouseMove);
-    this.container.addEventListener('mouseenter', this._onMouseEnter);
-    this.container.addEventListener('mouseleave', this._onMouseLeave);
 
     // Touch
     this.container.addEventListener('touchmove', this._onTouchMove, { passive: true });
@@ -279,20 +324,32 @@ class HalftoneLight extends EventEmitter {
 
   _onMouseMove(e) {
     const rect = this.container.getBoundingClientRect();
+
+    // Update cursor position
     this._mouseTarget[0] = (e.clientX - rect.left) / rect.width;
     this._mouseTarget[1] = 1.0 - (e.clientY - rect.top) / rect.height;
-  }
 
-  _onMouseEnter() {
-    this._mouseActiveTarget = 1;
+    // Compute inside from bounding rect (replaces mouseenter/mouseleave)
+    const inside = e.clientX >= rect.left && e.clientX <= rect.right
+                && e.clientY >= rect.top  && e.clientY <= rect.bottom;
+
+    if (!inside) {
+      this._mouseActiveTarget = 0;
+      return;
+    }
+
+    // Check if hovering a "pause" element (button, link, [data-hwgl-pause])
+    const sel = this._config.pauseSelector;
+    if (sel && e.target.closest(sel)) {
+      this._mouseActiveTarget = 0;
+    } else {
+      this._mouseActiveTarget = 1;
+    }
+
     // Start loop if interaction is enabled
     if (this._hasInteraction && !this._isPlaying) {
       this.resume();
     }
-  }
-
-  _onMouseLeave() {
-    this._mouseActiveTarget = 0;
   }
 
   _onTouchMove(e) {
@@ -331,9 +388,26 @@ class HalftoneLight extends EventEmitter {
     this._mouseCurrent[1] = lerp(this._mouseCurrent[1], this._mouseTarget[1], 0.1);
     this._uniforms.uMouse.value = this._mouseCurrent;
 
+    // Compute mouse velocity (delta per frame)
+    this._velocity[0] = this._mouseCurrent[0] - this._prevMouse[0];
+    this._velocity[1] = this._mouseCurrent[1] - this._prevMouse[1];
+    this._prevMouse[0] = this._mouseCurrent[0];
+    this._prevMouse[1] = this._mouseCurrent[1];
+
     // Smooth mouse active
     this._mouseActiveCurrent = lerp(this._mouseActiveCurrent, this._mouseActiveTarget, 0.08);
     this._uniforms.uMouseActive.value = this._mouseActiveCurrent;
+
+    // Update active effect (e.g. comet trail)
+    if (this._activeEffect) {
+      this._uniforms.uVelocity.value = this._velocity;
+      this._activeEffect.update({
+        mouse: this._mouseCurrent,
+        mouseActive: this._mouseActiveCurrent,
+        velocity: this._velocity,
+        time: this._time,
+      });
+    }
 
     // Update video texture
     if (this._hasVideo && this._currentTexture) {
@@ -371,18 +445,18 @@ class HalftoneLight extends EventEmitter {
 // ─── Auto-init ───
 
 function autoInit() {
-  document.querySelectorAll('[data-hl-element]').forEach(el => {
-    if (el.__halftoneLight) return;
+  document.querySelectorAll('[data-hwgl-element]').forEach(el => {
+    if (el.__halftoneWebGL) return;
     try {
-      new HalftoneLight({ container: el });
+      new HalftoneWebGL({ container: el });
     } catch (e) {
-      console.warn('[HalftoneLight] Auto-init failed:', e.message);
+      console.warn('[HalftoneWebGL] Auto-init failed:', e.message);
     }
   });
 }
 
 if (typeof window !== 'undefined') {
-  window.HalftoneLight = HalftoneLight;
+  window.HalftoneWebGL = HalftoneWebGL;
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', autoInit);
   } else {
@@ -390,4 +464,4 @@ if (typeof window !== 'undefined') {
   }
 }
 
-export default HalftoneLight;
+export default HalftoneWebGL;

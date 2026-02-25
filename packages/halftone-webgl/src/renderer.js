@@ -40,6 +40,18 @@ export function createRenderer(container, config) {
     container.style.position = 'relative';
   }
   container.style.overflow = 'hidden';
+
+  // Promote existing children above the canvas (Vanta-style)
+  Array.from(container.children).forEach(child => {
+    const style = getComputedStyle(child);
+    if (style.position === 'static') {
+      child.style.position = 'relative';
+    }
+    if (!child.style.zIndex) {
+      child.style.zIndex = '1';
+    }
+  });
+
   container.appendChild(canvas);
 
   // Default texture (1x1 black)
@@ -63,6 +75,7 @@ export function createRenderer(container, config) {
     uShape: { value: SHAPE_IDS[config.shape] || 0 },
     uScale: { value: config.scale },
     uSoftness: { value: config.softness },
+    uGap: { value: config.gap },
     // Tone
     uContrast: { value: config.contrast },
     uBrightness: { value: config.brightness },
@@ -85,6 +98,10 @@ export function createRenderer(container, config) {
     uRadius: { value: config.radius },
     uStrength: { value: config.strength },
     uTime: { value: 0 },
+    // Trail (comet effect)
+    uTrail: { value: defaultTexture },
+    uVelocity: { value: [0, 0] },
+    uHasTrail: { value: 0 },
   };
 
   // Fullscreen triangle (more efficient than quad — covers viewport with 1 triangle)
@@ -117,6 +134,9 @@ export function updateUniform(uniforms, key, value, config) {
       break;
     case 'softness':
       uniforms.uSoftness.value = value;
+      break;
+    case 'gap':
+      uniforms.uGap.value = value;
       break;
     case 'contrast':
       uniforms.uContrast.value = value;
@@ -156,6 +176,9 @@ export function updateUniform(uniforms, key, value, config) {
       break;
     case 'strength':
       uniforms.uStrength.value = value;
+      break;
+    case 'trailFade':
+      // JS-side only — handled by the active effect, no shader uniform
       break;
   }
 }

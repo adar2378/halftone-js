@@ -7,10 +7,10 @@ export function parseAttributes(el) {
   const ds = el.dataset;
 
   for (const key in ds) {
-    if (!key.startsWith('hl') || key === 'hlElement') continue;
+    if (!key.startsWith('hwgl') || key === 'hwglElement') continue;
 
-    // Convert camelCase dataset key to config key: hlFrequency → frequency
-    const prop = key.slice(2, 3).toLowerCase() + key.slice(3);
+    // Convert camelCase dataset key to config key: hwglFrequency → frequency
+    const prop = key.slice(4, 5).toLowerCase() + key.slice(5);
 
     const raw = ds[key];
 
