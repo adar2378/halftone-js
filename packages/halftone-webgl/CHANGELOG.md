@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.2 (2026-02-26)
+
+### Fixed
+
+- Video/webcam sources now properly cleaned up when switching to a new source (prevents memory leaks)
+- Uploaded video files (blob URLs) now correctly detected and loaded as video textures
+
+### Added
+
+- `loadSource(src, { type: 'video' })` type hint for extensionless or blob video URLs
+- Source URL input field in playground for loading remote image/video URLs
+
 ## 1.0.1 (2026-02-25)
 
 ### Added
