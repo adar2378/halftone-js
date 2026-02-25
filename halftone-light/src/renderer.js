@@ -85,6 +85,10 @@ export function createRenderer(container, config) {
     uRadius: { value: config.radius },
     uStrength: { value: config.strength },
     uTime: { value: 0 },
+    // Trail (comet effect)
+    uTrail: { value: defaultTexture },
+    uVelocity: { value: [0, 0] },
+    uHasTrail: { value: 0 },
   };
 
   // Fullscreen triangle (more efficient than quad — covers viewport with 1 triangle)

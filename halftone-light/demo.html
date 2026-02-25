@@ -98,6 +98,22 @@
     .source-row { display: flex; gap: 8px; }
     .source-row select { flex: 1; }
     .source-row input { flex: 1; }
+    .source-btns { display: flex; gap: 6px; margin-bottom: 8px; }
+    .source-btns button { font-size: 11px; padding: 6px 10px; }
+    .source-btns button.active { background: #E85002; border-color: #E85002; color: #fff; }
+    .upload-label {
+      flex: 1;
+      padding: 6px 10px;
+      background: #222;
+      color: #ddd;
+      border: 1px solid #444;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .upload-label:hover { background: #333; }
+    .upload-label input { display: none; }
   </style>
 </head>
 <body>
@@ -107,6 +123,13 @@
     <h1>HalftoneLight</h1>
 
     <h2>Source</h2>
+    <div class="source-btns">
+      <label class="upload-label" title="Upload image or video">
+        Upload File
+        <input type="file" id="fileUpload" accept="image/*,video/*">
+      </label>
+      <button id="webcamBtn">Webcam</button>
+    </div>
     <div class="field">
       <label>Source URL</label>
       <input type="text" id="source" value="../sampleimage.png" placeholder="image URL or 'webcam'">
@@ -200,6 +223,7 @@
         <option value="vortex">vortex</option>
         <option value="colorShift">colorShift</option>
         <option value="focus">focus</option>
+        <option value="comet">comet</option>
       </select>
     </div>
     <div class="field">
@@ -261,6 +285,21 @@
         sourceTimeout = setTimeout(() => {
           ht.loadSource(e.target.value).catch(() => {});
         }, 500);
+      });
+
+      // File upload (image or video)
+      document.getElementById('fileUpload').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const url = URL.createObjectURL(file);
+        document.getElementById('source').value = file.name;
+        ht.loadSource(url).catch(() => {});
+      });
+
+      // Webcam
+      document.getElementById('webcamBtn').addEventListener('click', () => {
+        document.getElementById('source').value = 'webcam';
+        ht.loadSource('webcam').catch(() => {});
       });
     }
 

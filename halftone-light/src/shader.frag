@@ -34,12 +34,17 @@ uniform float uSourceAspect;
 uniform float uContainerAspect;
 
 // Interaction
-uniform int uInteraction;  // 0=none, 1=reveal, 2=magnify, 3=warp, 4=ripple, 5=vortex, 6=colorShift, 7=focus
+uniform int uInteraction;  // 0=none, 1=reveal, 2=magnify, 3=warp, 4=ripple, 5=vortex, 6=colorShift, 7=focus, 8=comet
 uniform vec2 uMouse;       // normalized 0-1
 uniform float uMouseActive;
 uniform float uRadius;
 uniform float uStrength;
 uniform float uTime;
+
+// Trail (comet effect)
+uniform sampler2D uTrail;
+uniform vec2 uVelocity;
+uniform float uHasTrail;
 
 // ─── Helpers ───
 
@@ -211,6 +216,14 @@ InteractionResult computeInteraction(vec2 uv) {
   }
   else if (uInteraction == 7) { // focus
     r.freqMul = 1.0 + active * 2.0;
+  }
+  else if (uInteraction == 8 && uHasTrail > 0.5) { // comet
+    float heat = texture2D(uTrail, uv).r;
+    r.sizeMul = 1.0 + heat * uStrength * 2.0;
+    float speed = length(uVelocity);
+    if (speed > 0.001) {
+      r.uv = uv + normalize(uVelocity) * heat * 0.02;
+    }
   }
 
   return r;

@@ -9,6 +9,7 @@ import {
   isVideoTexture,
   updateVideoTexture,
 } from './texture.js';
+import cometEffect from './effects/comet.js';
 
 class HalftoneLight extends EventEmitter {
   constructor(options = {}) {
@@ -39,6 +40,9 @@ class HalftoneLight extends EventEmitter {
     this._hasVideo = false;
     this._hasInteraction = this._config.interaction !== 'none';
     this._destroyed = false;
+    this._prevMouse = [0, 0];
+    this._velocity = [0, 0];
+    this._activeEffect = null;
 
     // Create WebGL renderer
     try {
@@ -66,6 +70,11 @@ class HalftoneLight extends EventEmitter {
 
     // Set up events
     this._setupEvents();
+
+    // Set up comet effect if initial interaction is 'comet'
+    if (this._config.interaction === 'comet') {
+      this._setupEffect('comet');
+    }
 
     // Load source if provided
     if (this._config.source) {
@@ -205,6 +214,7 @@ class HalftoneLight extends EventEmitter {
 
   destroy() {
     this._destroyed = true;
+    this._teardownEffect();
     this.pause();
 
     // Remove event listeners
@@ -242,12 +252,37 @@ class HalftoneLight extends EventEmitter {
 
   // ─── Internal ───
 
+  _setupEffect(name) {
+    this._teardownEffect();
+    if (name === 'comet') {
+      const { trailTexture } = cometEffect.setup(this._gl);
+      this._uniforms.uTrail.value = trailTexture;
+      this._uniforms.uHasTrail.value = 1;
+      this._activeEffect = cometEffect;
+    }
+  }
+
+  _teardownEffect() {
+    if (this._activeEffect) {
+      this._activeEffect.teardown();
+      this._uniforms.uTrail.value = this._defaultTexture;
+      this._uniforms.uHasTrail.value = 0;
+      this._uniforms.uVelocity.value = [0, 0];
+      this._activeEffect = null;
+    }
+  }
+
   _updateConfig(key, value) {
     this._config[key] = value;
     updateUniform(this._uniforms, key, value, this._config);
 
     if (key === 'interaction') {
       this._hasInteraction = value !== 'none';
+      if (value === 'comet') {
+        this._setupEffect('comet');
+      } else {
+        this._teardownEffect();
+      }
       this._updatePlayState();
     }
     if (key === 'source') {
@@ -331,9 +366,26 @@ class HalftoneLight extends EventEmitter {
     this._mouseCurrent[1] = lerp(this._mouseCurrent[1], this._mouseTarget[1], 0.1);
     this._uniforms.uMouse.value = this._mouseCurrent;
 
+    // Compute mouse velocity (delta per frame)
+    this._velocity[0] = this._mouseCurrent[0] - this._prevMouse[0];
+    this._velocity[1] = this._mouseCurrent[1] - this._prevMouse[1];
+    this._prevMouse[0] = this._mouseCurrent[0];
+    this._prevMouse[1] = this._mouseCurrent[1];
+
     // Smooth mouse active
     this._mouseActiveCurrent = lerp(this._mouseActiveCurrent, this._mouseActiveTarget, 0.08);
     this._uniforms.uMouseActive.value = this._mouseActiveCurrent;
+
+    // Update active effect (e.g. comet trail)
+    if (this._activeEffect) {
+      this._uniforms.uVelocity.value = this._velocity;
+      this._activeEffect.update({
+        mouse: this._mouseCurrent,
+        mouseActive: this._mouseActiveCurrent,
+        velocity: this._velocity,
+        time: this._time,
+      });
+    }
 
     // Update video texture
     if (this._hasVideo && this._currentTexture) {
