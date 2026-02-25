@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.3 (2026-02-26)
+
+### Fixed
+
+- Cover/contain aspect ratio bug — portrait images in landscape containers were stretched instead of cropped/letterboxed. The `fitUV()` shader function had inverted multiply/divide operations.
+
 ## 1.0.2 (2026-02-26)
 
 ### Fixed
