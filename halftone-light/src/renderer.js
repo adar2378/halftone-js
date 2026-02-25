@@ -40,6 +40,18 @@ export function createRenderer(container, config) {
     container.style.position = 'relative';
   }
   container.style.overflow = 'hidden';
+
+  // Promote existing children above the canvas (Vanta-style)
+  Array.from(container.children).forEach(child => {
+    const style = getComputedStyle(child);
+    if (style.position === 'static') {
+      child.style.position = 'relative';
+    }
+    if (!child.style.zIndex) {
+      child.style.zIndex = '1';
+    }
+  });
+
   container.appendChild(canvas);
 
   // Default texture (1x1 black)

@@ -3,324 +3,568 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HalftoneLight — Interactive Demo</title>
+  <title>HalftoneLight — Showcase</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    /* ─── Reset & Base ─── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #0a0a0f;
       color: #e0e0e0;
+      line-height: 1.5;
+    }
+
+    /* ─── Layout ─── */
+    .section {
+      padding: 60px 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #666;
+      margin-bottom: 24px;
+    }
+
+    /* ─── Hero ─── */
+    .hero-container {
+      height: 80vh;
+      min-height: 500px;
+    }
+    .hero-content {
       display: flex;
-      min-height: 100vh;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      text-align: center;
+      gap: 16px;
+      padding: 32px;
     }
-    #canvas-area {
-      flex: 1;
+    .hero-title {
+      font-size: clamp(40px, 8vw, 80px);
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -2px;
+      text-shadow: 0 2px 40px rgba(0,0,0,0.5);
+    }
+    .hero-subtitle {
+      font-size: clamp(14px, 2vw, 18px);
+      color: rgba(255,255,255,0.6);
+      max-width: 500px;
+    }
+    .hero-cta {
+      margin-top: 12px;
+      padding: 14px 36px;
+      background: #E85002;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .hero-cta:hover {
+      background: #ff6b1a;
+      transform: translateY(-1px);
+    }
+
+    /* ─── Grid Section ─── */
+    .shape-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: 200px 200px;
+      gap: 16px;
+    }
+    .shape-grid .grid-cell:nth-child(1) {
+      grid-column: span 2;
+    }
+    .shape-grid .grid-cell:nth-child(2) {
+      grid-row: span 2;
+    }
+    .grid-cell {
       position: relative;
-      min-height: 100vh;
+      border-radius: 12px;
+      overflow: hidden;
     }
-    #controls {
-      width: 320px;
+    .grid-label {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      z-index: 1;
+      display: flex;
+      gap: 6px;
+      pointer-events: none;
+    }
+    .grid-tag {
+      padding: 4px 10px;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
+      border-radius: 6px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.8);
+      letter-spacing: 0.5px;
+    }
+
+    /* ─── Content Cards ─── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .card-container {
+      height: 320px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .card-content {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: flex-start;
+      height: 100%;
+      padding: 28px;
+      gap: 12px;
+    }
+    .card-content h3 {
+      font-size: 22px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .card-content p {
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+      max-width: 340px;
+    }
+    .card-btn {
+      margin-top: 4px;
+      padding: 10px 24px;
+      background: rgba(255,255,255,0.12);
+      backdrop-filter: blur(8px);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .card-btn:hover {
+      background: rgba(255,255,255,0.25);
+    }
+
+    /* ─── Playground ─── */
+    .playground {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 24px;
+      align-items: start;
+    }
+    .playground-canvas {
+      height: 480px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .playground-controls {
       background: #111118;
-      border-left: 1px solid #222;
+      border: 1px solid #1e1e28;
+      border-radius: 12px;
       padding: 20px;
+      max-height: 480px;
       overflow-y: auto;
-      max-height: 100vh;
-      position: sticky;
-      top: 0;
     }
-    h1 { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #fff; }
-    h2 {
+    .playground-controls h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+    .ctrl-group {
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 1.5px;
-      color: #888;
-      margin: 20px 0 10px;
-      padding-bottom: 6px;
-      border-bottom: 1px solid #222;
+      color: #555;
+      margin: 16px 0 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #1e1e28;
     }
-    .field { margin-bottom: 12px; }
+    .ctrl-group:first-of-type { margin-top: 0; }
+    .field {
+      margin-bottom: 10px;
+    }
     .field label {
       display: flex;
       justify-content: space-between;
       font-size: 12px;
-      margin-bottom: 4px;
-      color: #aaa;
+      margin-bottom: 3px;
+      color: #999;
     }
-    .field label span { color: #666; font-family: monospace; font-size: 11px; }
+    .field label span {
+      color: #555;
+      font-family: monospace;
+      font-size: 11px;
+    }
     input[type="range"] {
       width: 100%;
       appearance: none;
-      height: 4px;
-      background: #333;
+      height: 3px;
+      background: #2a2a35;
       border-radius: 2px;
       outline: none;
     }
     input[type="range"]::-webkit-slider-thumb {
       appearance: none;
-      width: 14px;
-      height: 14px;
+      width: 12px;
+      height: 12px;
       background: #E85002;
       border-radius: 50%;
       cursor: pointer;
     }
-    select, input[type="text"] {
+    select {
       width: 100%;
       background: #1a1a22;
-      border: 1px solid #333;
+      border: 1px solid #2a2a35;
       color: #ddd;
       padding: 6px 8px;
       font-size: 12px;
-      border-radius: 4px;
+      border-radius: 6px;
+      outline: none;
     }
-    input[type="color"] {
-      width: 40px;
-      height: 28px;
-      border: 1px solid #333;
-      background: none;
-      cursor: pointer;
-      border-radius: 4px;
-      padding: 0;
+    .source-row {
+      display: flex;
+      gap: 6px;
     }
-    .color-row { display: flex; gap: 8px; align-items: center; }
-    .color-row label { flex: 1; }
-    .btn-row { display: flex; gap: 8px; margin-top: 16px; }
-    button {
+    .source-row label,
+    .source-row button {
       flex: 1;
-      padding: 8px 12px;
-      background: #222;
-      color: #ddd;
-      border: 1px solid #444;
-      border-radius: 4px;
-      font-size: 12px;
-      cursor: pointer;
-    }
-    button:hover { background: #333; }
-    .source-row { display: flex; gap: 8px; }
-    .source-row select { flex: 1; }
-    .source-row input { flex: 1; }
-    .source-btns { display: flex; gap: 6px; margin-bottom: 8px; }
-    .source-btns button { font-size: 11px; padding: 6px 10px; }
-    .source-btns button.active { background: #E85002; border-color: #E85002; color: #fff; }
-    .upload-label {
-      flex: 1;
-      padding: 6px 10px;
-      background: #222;
-      color: #ddd;
-      border: 1px solid #444;
-      border-radius: 4px;
+      padding: 7px 12px;
+      background: #1a1a22;
+      color: #bbb;
+      border: 1px solid #2a2a35;
+      border-radius: 6px;
       font-size: 11px;
       cursor: pointer;
       text-align: center;
+      transition: background 0.15s;
     }
-    .upload-label:hover { background: #333; }
-    .upload-label input { display: none; }
+    .source-row label:hover,
+    .source-row button:hover {
+      background: #252530;
+    }
+    .source-row input[type="file"] { display: none; }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 768px) {
+      .section { padding: 40px 16px; }
+      .shape-grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 180px 180px 180px;
+      }
+      .shape-grid .grid-cell:nth-child(1) {
+        grid-column: span 2;
+      }
+      .shape-grid .grid-cell:nth-child(2) {
+        grid-row: span 1;
+      }
+      .card-grid {
+        grid-template-columns: 1fr;
+      }
+      .playground {
+        grid-template-columns: 1fr;
+      }
+      .playground-canvas { height: 320px; }
+      .playground-controls { max-height: none; }
+    }
   </style>
 </head>
 <body>
-  <div id="canvas-area"></div>
 
-  <div id="controls">
-    <h1>HalftoneLight</h1>
-
-    <h2>Source</h2>
-    <div class="source-btns">
-      <label class="upload-label" title="Upload image or video">
-        Upload File
-        <input type="file" id="fileUpload" accept="image/*,video/*">
-      </label>
-      <button id="webcamBtn">Webcam</button>
-    </div>
-    <div class="field">
-      <label>Source URL</label>
-      <input type="text" id="source" value="../sampleimage.png" placeholder="image URL or 'webcam'">
-    </div>
-    <div class="field">
-      <label>Fit</label>
-      <select id="fit">
-        <option value="cover" selected>cover</option>
-        <option value="contain">contain</option>
-        <option value="fill">fill</option>
-      </select>
-    </div>
-
-    <h2>Screen (Grid)</h2>
-    <div class="field">
-      <label>Frequency <span id="val-frequency">40</span></label>
-      <input type="range" id="frequency" min="5" max="150" step="1" value="40">
-    </div>
-    <div class="field">
-      <label>Angle <span id="val-angle">0</span></label>
-      <input type="range" id="angle" min="0" max="90" step="1" value="0">
-    </div>
-
-    <h2>Dot (Shape & Edge)</h2>
-    <div class="field">
-      <label>Shape</label>
-      <select id="shape">
-        <option value="circle" selected>circle</option>
-        <option value="square">square</option>
-        <option value="diamond">diamond</option>
-        <option value="line">line</option>
-        <option value="cross">cross</option>
-        <option value="ellipse">ellipse</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Scale <span id="val-scale">1.0</span></label>
-      <input type="range" id="scale" min="0.1" max="2.0" step="0.05" value="1.0">
-    </div>
-    <div class="field">
-      <label>Softness <span id="val-softness">0.5</span></label>
-      <input type="range" id="softness" min="0" max="1" step="0.05" value="0.5">
-    </div>
-    <div class="field">
-      <label>Gap <span id="val-gap">0</span></label>
-      <input type="range" id="gap" min="0" max="1" step="0.01" value="0">
-    </div>
-
-    <h2>Tone</h2>
-    <div class="field">
-      <label>Contrast <span id="val-contrast">1.8</span></label>
-      <input type="range" id="contrast" min="0.2" max="5.0" step="0.1" value="1.8">
-    </div>
-    <div class="field">
-      <label>Brightness <span id="val-brightness">1.0</span></label>
-      <input type="range" id="brightness" min="0.1" max="3.0" step="0.05" value="1.0">
-    </div>
-    <div class="field">
-      <label>Min Dot <span id="val-minDot">0.0</span></label>
-      <input type="range" id="minDot" min="0" max="0.5" step="0.01" value="0.0">
-    </div>
-
-    <h2>Color</h2>
-    <div class="field">
-      <label>Color Mode</label>
-      <select id="colorMode">
-        <option value="mono" selected>mono</option>
-        <option value="auto">auto (source colors)</option>
-        <option value="cmyk">cmyk</option>
-        <option value="duotone">duotone</option>
-      </select>
-    </div>
-    <div class="color-row field">
-      <label>Dot Color</label>
-      <input type="color" id="color" value="#E85002">
-    </div>
-    <div class="color-row field">
-      <label>Color B (duotone)</label>
-      <input type="color" id="colorB" value="#000000">
-    </div>
-    <div class="color-row field">
-      <label>Background</label>
-      <input type="color" id="bgColor" value="#050510">
-    </div>
-
-    <h2>Interaction</h2>
-    <div class="field">
-      <label>Mode</label>
-      <select id="interaction">
-        <option value="none">none</option>
-        <option value="reveal" selected>reveal</option>
-        <option value="magnify">magnify</option>
-        <option value="warp">warp</option>
-        <option value="ripple">ripple</option>
-        <option value="vortex">vortex</option>
-        <option value="colorShift">colorShift</option>
-        <option value="focus">focus</option>
-        <option value="comet">comet</option>
-        <option value="sparkle">sparkle</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Radius <span id="val-radius">0.3</span></label>
-      <input type="range" id="radius" min="0.05" max="0.8" step="0.01" value="0.3">
-    </div>
-    <div class="field">
-      <label>Strength <span id="val-strength">0.5</span></label>
-      <input type="range" id="strength" min="0.1" max="2.0" step="0.05" value="0.5">
-    </div>
-    <div class="field">
-      <label>Trail Fade <span id="val-trailFade">0.03</span></label>
-      <input type="range" id="trailFade" min="0.01" max="0.10" step="0.005" value="0.03">
-    </div>
-
-    <div class="btn-row">
-      <button onclick="ht.pause()">Pause</button>
-      <button onclick="ht.resume()">Resume</button>
-      <button onclick="downloadSnapshot()">Snapshot</button>
+  <!-- ════════════════════════════════════════════════════════════
+       Section 1 — Hero
+       Content is a child of the halftone container. The library
+       auto-promotes children (position:relative, z-index:1) so they
+       sit above the canvas. Buttons/links automatically pause the
+       interaction via the default pauseSelector.
+       ════════════════════════════════════════════════════════════ -->
+  <div class="hero-container"
+       data-hl-element
+       data-hl-source="https://picsum.photos/seed/halftone-hero/1400/900"
+       data-hl-interaction="reveal"
+       data-hl-color-mode="auto"
+       data-hl-frequency="45"
+       data-hl-softness="0.4"
+       data-hl-radius="0.35"
+       data-hl-strength="0.6">
+    <div class="hero-content">
+      <h1 class="hero-title">HalftoneLight</h1>
+      <p class="hero-subtitle">GPU-powered halftone effects for the web. Lightweight, interactive, drop-in.</p>
+      <button class="hero-cta" onclick="document.getElementById('playground').scrollIntoView({behavior:'smooth'})">Try the Playground</button>
     </div>
   </div>
 
+  <!-- ════════════════════════════════════════════════════════════
+       Section 2 — Size & Shape Grid
+       ════════════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">Shapes &amp; Sizes</div>
+    <div class="shape-grid">
+
+      <!-- Wide banner — 2 cols, line shape -->
+      <div class="grid-cell">
+        <div data-hl-element
+             data-hl-source="https://picsum.photos/seed/halftone-banner/1200/400"
+             data-hl-shape="line"
+             data-hl-color-mode="mono"
+             data-hl-interaction="magnify"
+             data-hl-frequency="50"
+             data-hl-color="#E85002"
+             data-hl-bg-color="#0a0a0f"
+             style="width:100%;height:100%">
+        </div>
+        <div class="grid-label">
+          <span class="grid-tag">line</span>
+          <span class="grid-tag">mono</span>
+          <span class="grid-tag">magnify</span>
+        </div>
+      </div>
+
+      <!-- Tall portrait — 1 col, 2 rows, circle shape -->
+      <div class="grid-cell">
+        <div data-hl-element
+             data-hl-source="https://picsum.photos/seed/halftone-portrait/600/800"
+             data-hl-shape="circle"
+             data-hl-color-mode="auto"
+             data-hl-interaction="warp"
+             data-hl-frequency="35"
+             style="width:100%;height:100%">
+        </div>
+        <div class="grid-label">
+          <span class="grid-tag">circle</span>
+          <span class="grid-tag">auto</span>
+          <span class="grid-tag">warp</span>
+        </div>
+      </div>
+
+      <!-- Square — diamond shape, cmyk -->
+      <div class="grid-cell">
+        <div data-hl-element
+             data-hl-source="https://picsum.photos/seed/halftone-square/600/600"
+             data-hl-shape="diamond"
+             data-hl-color-mode="cmyk"
+             data-hl-interaction="ripple"
+             data-hl-frequency="40"
+             style="width:100%;height:100%">
+        </div>
+        <div class="grid-label">
+          <span class="grid-tag">diamond</span>
+          <span class="grid-tag">cmyk</span>
+          <span class="grid-tag">ripple</span>
+        </div>
+      </div>
+
+      <!-- Small — ellipse, duotone -->
+      <div class="grid-cell">
+        <div data-hl-element
+             data-hl-source="https://picsum.photos/seed/halftone-small/400/300"
+             data-hl-shape="ellipse"
+             data-hl-color-mode="duotone"
+             data-hl-color="#6B5CE7"
+             data-hl-color-b="#E85002"
+             data-hl-interaction="vortex"
+             data-hl-frequency="35"
+             style="width:100%;height:100%">
+        </div>
+        <div class="grid-label">
+          <span class="grid-tag">ellipse</span>
+          <span class="grid-tag">duotone</span>
+          <span class="grid-tag">vortex</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       Section 3 — Content Overlay Cards
+       Content is a child of the halftone container. Text is
+       selectable, buttons/links pause the interaction on hover.
+       ════════════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">Content Overlays</div>
+    <div class="card-grid">
+
+      <!-- Card A -->
+      <div class="card-container"
+           data-hl-element
+           data-hl-source="https://picsum.photos/seed/halftone-card-a/800/600"
+           data-hl-interaction="reveal"
+           data-hl-color-mode="auto"
+           data-hl-frequency="40"
+           data-hl-softness="0.6"
+           data-hl-radius="0.3">
+        <div class="card-content">
+          <h3>Interactive Backgrounds</h3>
+          <p>Layer text and buttons over halftone effects. Text is selectable, buttons are clickable — just like a background image.</p>
+          <button class="card-btn">Learn More</button>
+        </div>
+      </div>
+
+      <!-- Card B -->
+      <div class="card-container"
+           data-hl-element
+           data-hl-source="https://picsum.photos/seed/halftone-card-b/800/600"
+           data-hl-interaction="magnify"
+           data-hl-shape="cross"
+           data-hl-color-mode="mono"
+           data-hl-color="#00D4AA"
+           data-hl-bg-color="#0a0a0f"
+           data-hl-frequency="45"
+           data-hl-radius="0.25">
+        <div class="card-content">
+          <h3>Works Like a BG Image</h3>
+          <p>Content is a child of the halftone container. The canvas is <code style="color:#00D4AA">position: absolute; pointer-events: none</code> — content sits on top naturally.</p>
+          <a href="https://github.com" target="_blank" class="card-btn">View on GitHub</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       Section 4 — Compact Playground
+       ════════════════════════════════════════════════════════════ -->
+  <div class="section" id="playground">
+    <div class="section-title">Playground</div>
+    <div class="playground">
+      <div class="playground-canvas" id="pg-canvas"></div>
+
+      <div class="playground-controls">
+        <h3>Parameters</h3>
+
+        <div class="ctrl-group">Source</div>
+        <div class="source-row">
+          <label title="Upload image or video">
+            Upload File
+            <input type="file" id="fileUpload" accept="image/*,video/*">
+          </label>
+          <button id="webcamBtn">Webcam</button>
+        </div>
+
+        <div class="ctrl-group">Shape</div>
+        <div class="field">
+          <label>Shape</label>
+          <select id="pg-shape">
+            <option value="circle" selected>circle</option>
+            <option value="square">square</option>
+            <option value="diamond">diamond</option>
+            <option value="line">line</option>
+            <option value="cross">cross</option>
+            <option value="ellipse">ellipse</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Color Mode</label>
+          <select id="pg-colorMode">
+            <option value="mono" selected>mono</option>
+            <option value="auto">auto</option>
+            <option value="cmyk">cmyk</option>
+            <option value="duotone">duotone</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Interaction</label>
+          <select id="pg-interaction">
+            <option value="none">none</option>
+            <option value="reveal" selected>reveal</option>
+            <option value="magnify">magnify</option>
+            <option value="warp">warp</option>
+            <option value="ripple">ripple</option>
+            <option value="vortex">vortex</option>
+            <option value="colorShift">colorShift</option>
+            <option value="focus">focus</option>
+            <option value="comet">comet</option>
+            <option value="sparkle">sparkle</option>
+          </select>
+        </div>
+
+        <div class="ctrl-group">Screen &amp; Dot</div>
+        <div class="field">
+          <label>Frequency <span id="val-frequency">40</span></label>
+          <input type="range" id="pg-frequency" min="5" max="150" step="1" value="40">
+        </div>
+        <div class="field">
+          <label>Scale <span id="val-scale">1.0</span></label>
+          <input type="range" id="pg-scale" min="0.1" max="2.0" step="0.05" value="1.0">
+        </div>
+        <div class="field">
+          <label>Softness <span id="val-softness">0.5</span></label>
+          <input type="range" id="pg-softness" min="0" max="1" step="0.05" value="0.5">
+        </div>
+        <div class="field">
+          <label>Gap <span id="val-gap">0</span></label>
+          <input type="range" id="pg-gap" min="0" max="1" step="0.01" value="0">
+        </div>
+
+        <div class="ctrl-group">Tone</div>
+        <div class="field">
+          <label>Contrast <span id="val-contrast">1.8</span></label>
+          <input type="range" id="pg-contrast" min="0.2" max="5.0" step="0.1" value="1.8">
+        </div>
+        <div class="field">
+          <label>Brightness <span id="val-brightness">1.0</span></label>
+          <input type="range" id="pg-brightness" min="0.1" max="3.0" step="0.05" value="1.0">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer style="text-align:center;padding:40px 16px;color:#333;font-size:12px;">
+    HalftoneLight — GPU halftone effects &middot; &lt;21 KB gzipped
+  </footer>
+
+  <!-- ─── Scripts ─── -->
   <script src="dist/halftone-light.min.js"></script>
   <script>
-    let ht;
+    // ─── Playground Instance (JS API) ───
+    const pg = new HalftoneLight({
+      container: '#pg-canvas',
+      source: 'https://picsum.photos/seed/halftone-playground/1200/800',
+      interaction: 'reveal',
+    });
 
-    function init() {
-      ht = new HalftoneLight({
-        container: '#canvas-area',
-        source: document.getElementById('source').value,
-        interaction: 'reveal',
+    // Sliders
+    const sliders = ['frequency', 'scale', 'softness', 'gap', 'contrast', 'brightness'];
+    sliders.forEach(id => {
+      const el = document.getElementById('pg-' + id);
+      el.addEventListener('input', () => {
+        const v = parseFloat(el.value);
+        document.getElementById('val-' + id).textContent = v;
+        pg.set(id, v);
       });
+    });
 
-      // Wire up controls
-      const sliders = ['frequency', 'angle', 'scale', 'softness', 'gap', 'contrast', 'brightness', 'minDot', 'radius', 'strength', 'trailFade'];
-      sliders.forEach(id => {
-        const el = document.getElementById(id);
-        el.addEventListener('input', () => {
-          const v = parseFloat(el.value);
-          document.getElementById('val-' + id).textContent = v;
-          ht.set(id, v);
-        });
+    // Selects
+    ['shape', 'colorMode', 'interaction'].forEach(id => {
+      document.getElementById('pg-' + id).addEventListener('change', e => {
+        pg.set(id, e.target.value);
       });
+    });
 
-      const selects = ['shape', 'colorMode', 'interaction', 'fit'];
-      selects.forEach(id => {
-        document.getElementById(id).addEventListener('change', (e) => {
-          ht.set(id, e.target.value);
-        });
-      });
+    // File upload
+    document.getElementById('fileUpload').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      pg.loadSource(URL.createObjectURL(file)).catch(() => {});
+    });
 
-      const colors = ['color', 'colorB', 'bgColor'];
-      colors.forEach(id => {
-        document.getElementById(id).addEventListener('input', (e) => {
-          ht.set(id, e.target.value);
-        });
-      });
-
-      // Source URL
-      let sourceTimeout;
-      document.getElementById('source').addEventListener('input', (e) => {
-        clearTimeout(sourceTimeout);
-        sourceTimeout = setTimeout(() => {
-          ht.loadSource(e.target.value).catch(() => {});
-        }, 500);
-      });
-
-      // File upload (image or video)
-      document.getElementById('fileUpload').addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const url = URL.createObjectURL(file);
-        document.getElementById('source').value = file.name;
-        ht.loadSource(url).catch(() => {});
-      });
-
-      // Webcam
-      document.getElementById('webcamBtn').addEventListener('click', () => {
-        document.getElementById('source').value = 'webcam';
-        ht.loadSource('webcam').catch(() => {});
-      });
-    }
-
-    function downloadSnapshot() {
-      const url = ht.snapshot();
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'halftone-snapshot.png';
-      a.click();
-    }
-
-    init();
+    // Webcam
+    document.getElementById('webcamBtn').addEventListener('click', () => {
+      pg.loadSource('webcam').catch(() => {});
+    });
   </script>
 </body>
 </html>

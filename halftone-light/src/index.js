@@ -63,8 +63,6 @@ class HalftoneLight extends EventEmitter {
     // Bind methods
     this._onResize = this._onResize.bind(this);
     this._onMouseMove = this._onMouseMove.bind(this);
-    this._onMouseEnter = this._onMouseEnter.bind(this);
-    this._onMouseLeave = this._onMouseLeave.bind(this);
     this._onTouchMove = this._onTouchMove.bind(this);
     this._onTouchEnd = this._onTouchEnd.bind(this);
     this._loop = this._loop.bind(this);
@@ -223,8 +221,6 @@ class HalftoneLight extends EventEmitter {
     // Remove event listeners
     window.removeEventListener('resize', this._onResize);
     window.removeEventListener('mousemove', this._onMouseMove);
-    this.container.removeEventListener('mouseenter', this._onMouseEnter);
-    this.container.removeEventListener('mouseleave', this._onMouseLeave);
     this.container.removeEventListener('touchmove', this._onTouchMove);
     this.container.removeEventListener('touchend', this._onTouchEnd);
 
@@ -311,10 +307,8 @@ class HalftoneLight extends EventEmitter {
       this._resizeObserver.observe(this.container);
     }
 
-    // Mouse
+    // Mouse — single window listener handles position + active state
     window.addEventListener('mousemove', this._onMouseMove);
-    this.container.addEventListener('mouseenter', this._onMouseEnter);
-    this.container.addEventListener('mouseleave', this._onMouseLeave);
 
     // Touch
     this.container.addEventListener('touchmove', this._onTouchMove, { passive: true });
@@ -327,20 +321,32 @@ class HalftoneLight extends EventEmitter {
 
   _onMouseMove(e) {
     const rect = this.container.getBoundingClientRect();
+
+    // Update cursor position
     this._mouseTarget[0] = (e.clientX - rect.left) / rect.width;
     this._mouseTarget[1] = 1.0 - (e.clientY - rect.top) / rect.height;
-  }
 
-  _onMouseEnter() {
-    this._mouseActiveTarget = 1;
+    // Compute inside from bounding rect (replaces mouseenter/mouseleave)
+    const inside = e.clientX >= rect.left && e.clientX <= rect.right
+                && e.clientY >= rect.top  && e.clientY <= rect.bottom;
+
+    if (!inside) {
+      this._mouseActiveTarget = 0;
+      return;
+    }
+
+    // Check if hovering a "pause" element (button, link, [data-hl-pause])
+    const sel = this._config.pauseSelector;
+    if (sel && e.target.closest(sel)) {
+      this._mouseActiveTarget = 0;
+    } else {
+      this._mouseActiveTarget = 1;
+    }
+
     // Start loop if interaction is enabled
     if (this._hasInteraction && !this._isPlaying) {
       this.resume();
     }
-  }
-
-  _onMouseLeave() {
-    this._mouseActiveTarget = 0;
   }
 
   _onTouchMove(e) {

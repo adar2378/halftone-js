@@ -41,6 +41,8 @@ export const DEFAULTS = {
   // Container
   dpr: 'auto',
   zIndex: 0,
+  // Overlay
+  pauseSelector: 'a, button, [data-hl-pause]',
 };
 
 export function clamp(v, min, max) {
