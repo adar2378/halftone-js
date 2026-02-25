@@ -2,18 +2,17 @@ import * as THREE from 'three';
 
 /**
  * Halftone3D - High performance, GPU-accelerated halftone interaction layer.
- * Powered by Three.js InstancedMesh & GLSL Shaders.
  */
 export default class Halftone3D {
     static defaults = {
         grid: 60,
         gap: 0,
-        fit: 'cover', // cover, contain, fill
-        shape: 'circle', // circle, square, diamond, triangle
+        fit: 'cover',
+        shape: 'circle',
         color: '#E85002',
         bgColor: '#050510',
         source: null,
-        interaction: 'repulse', // none, repulse, attract, vortex, ripple
+        interaction: 'repulse',
         radius: 0.3,
         strength: 0.5,
         dotScale: 1.0,
@@ -29,16 +28,18 @@ export default class Halftone3D {
 
         if (!this.container) throw new Error('Halftone3D: Container not found');
 
-        this.width = 0;
-        this.height = 0;
-        this.sourceAspect = 1;
+        this.width = this.container.clientWidth;
+        this.height = this.container.clientHeight;
         this.mouse = new THREE.Vector2(0, 0);
+        this.velocity = new THREE.Vector2(0, 0);
+        this.prevMouse = new THREE.Vector2(0, 0);
+        this.mouseActive = 0;
         this.time = 0;
         this._init = false;
 
         this._setupScene();
+        this._setupTrail();
         this._setupEvents();
-        this.onResize(); // Initial sizing
         this._setupGrid();
         
         if (this.config.source) this.loadSource(this.config.source);
@@ -47,23 +48,17 @@ export default class Halftone3D {
         this.animate();
     }
 
-    /**
-     * Unified method to update configuration at runtime.
-     * Handles both internal state and GPU uniform updates.
-     */
     updateConfig(key, value) {
         this.config[key] = value;
         if (!this._init) return;
 
-        // Properties that require a full grid rebuild
         if (['grid', 'shape', 'gap'].includes(key)) {
             this._setupGrid();
             return;
         }
 
-        // Properties that map directly to uniforms
         const uniformMap = {
-            'color': () => this.uniforms.uColor.value.set(value),
+            'color': () => { if (value !== 'auto') this.uniforms.uColor.value.set(value); },
             'dotScale': () => this.uniforms.uDotScale.value = value,
             'contrast': () => this.uniforms.uContrast.value = value,
             'brightness': () => this.uniforms.uBrightness.value = value,
@@ -82,10 +77,7 @@ export default class Halftone3D {
     async loadSource(src) {
         if (!src) return;
         if (src === 'webcam') return this._setupWebcam();
-
-        // Check if it's a video (explicit extension or blob type)
         const isVideo = src.match(/\.(mp4|webm|ogg)$/i) || (src.startsWith('blob:') && this._lastUploadedType?.startsWith('video'));
-        
         if (isVideo) {
             try {
                 const video = document.createElement('video');
@@ -97,13 +89,8 @@ export default class Halftone3D {
                 };
                 await video.play();
                 this.uniforms.uTexture.value = new THREE.VideoTexture(video);
-            } catch (e) {
-                console.warn('Halftone3D: Video load failed, falling back to image loader', e);
-                this._loadImage(src);
-            }
-        } else {
-            this._loadImage(src);
-        }
+            } catch (e) { this._loadImage(src); }
+        } else { this._loadImage(src); }
     }
 
     _loadImage(src) {
@@ -112,34 +99,57 @@ export default class Halftone3D {
             this.sourceAspect = tex.image.width / tex.image.height;
             if (this.uniforms) this.uniforms.uSourceAspect.value = this.sourceAspect;
             this.uniforms.uTexture.value = tex;
-        }, undefined, (err) => {
-            console.error('Halftone3D: Image load failed', err);
         });
     }
 
     _setupScene() {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(this.config.bgColor);
-
-        this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1000);
+        const aspect = this.width / this.height;
+        this.camera = new THREE.OrthographicCamera(-1, 1, 1/aspect, -1/aspect, 0.1, 1000);
         this.camera.position.z = 5;
-
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        
-        // Polite styling
+        this.renderer.setSize(this.width, this.height);
         this.renderer.domElement.style.position = 'absolute';
-        this.renderer.domElement.style.inset = '0';
+        this.renderer.domElement.style.top = '0';
+        this.renderer.domElement.style.left = '0';
+        this.renderer.domElement.style.width = '100%';
+        this.renderer.domElement.style.height = '100%';
         this.renderer.domElement.style.pointerEvents = 'none';
-        
-        if (getComputedStyle(this.container).position === 'static') {
-            this.container.style.position = 'relative';
-        }
+        this.renderer.domElement.style.display = 'block';
+        if (getComputedStyle(this.container).position === 'static') this.container.style.position = 'relative';
         this.container.style.overflow = 'hidden';
         this.container.appendChild(this.renderer.domElement);
-
         this.defaultTexture = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1, THREE.RGBAFormat);
         this.defaultTexture.needsUpdate = true;
+    }
+
+    _setupTrail() {
+        // Create a small canvas to draw the mouse trail into
+        this.trailCanvas = document.createElement('canvas');
+        this.trailCanvas.width = this.trailCanvas.height = 128; // Small but enough for smooth trails
+        this.trailCtx = this.trailCanvas.getContext('2d');
+        this.trailTexture = new THREE.CanvasTexture(this.trailCanvas);
+    }
+
+    _updateTrail() {
+        if (!this.trailCtx) return;
+        
+        // 1. Fade existing trail
+        this.trailCtx.fillStyle = 'rgba(0,0,0,0.05)'; // Adjust this for tail length
+        this.trailCtx.fillRect(0, 0, 128, 128);
+
+        if (this._isMouseOver) {
+            // 2. Map normalized mouse (-1 to 1) to canvas (0 to 128)
+            const x = (this.mouse.x + 1) * 64;
+            const y = (1 - (this.mouse.y * (this.width / this.height))) * 64; // Approximate map
+            
+            // Actually, let's use a simpler mapping
+            const rect = this.container.getBoundingClientRect();
+            // We'll update this in onMouseMove for accuracy
+        }
+        this.trailTexture.needsUpdate = true;
     }
 
     _setupGrid() {
@@ -148,33 +158,26 @@ export default class Halftone3D {
             this.mesh.geometry.dispose();
             this.mesh.material.dispose();
         }
-
         const aspect = this.width / this.height;
         const cols = this.config.grid;
         const rows = Math.ceil(cols / aspect);
         const count = cols * rows;
-
         const geometry = this._getGeometry();
         this.uniforms = this._getUniforms(cols, rows);
-
         const material = new THREE.ShaderMaterial({
             uniforms: this.uniforms,
             vertexShader: this._getVertexShader(),
             fragmentShader: this._getFragmentShader(),
             transparent: true
         });
-
         this.mesh = new THREE.InstancedMesh(geometry, material, count);
         this.mesh.frustumCulled = false;
-        
         const instancePos = new Float32Array(count * 3);
         const instanceUV = new Float32Array(count * 2);
-        
         const stepX = 2.0 / cols;
         const stepY = (2.0 / aspect) / rows;
         const startY = (1.0 / aspect) - stepY/2;
         const startX = -1.0 + stepX/2;
-
         for (let i = 0; i < count; i++) {
             const r = Math.floor(i / cols);
             const c = i % cols;
@@ -183,7 +186,6 @@ export default class Halftone3D {
             instanceUV[i * 2] = c / (cols - 1 || 1);
             instanceUV[i * 2 + 1] = 1.0 - (r / (rows - 1 || 1));
         }
-
         this.mesh.geometry.setAttribute('instancePos', new THREE.InstancedBufferAttribute(instancePos, 3));
         this.mesh.geometry.setAttribute('instanceUV', new THREE.InstancedBufferAttribute(instanceUV, 2));
         this.scene.add(this.mesh);
@@ -202,9 +204,12 @@ export default class Halftone3D {
         return {
             uTime: { value: 0 },
             uTexture: { value: this.uniforms?.uTexture?.value || this.defaultTexture },
-            uSourceAspect: { value: this.sourceAspect },
+            uTrail: { value: this.trailTexture },
+            uSourceAspect: { value: this.sourceAspect || 1.0 },
             uContainerAspect: { value: this.width / this.height },
-            uMouse: { value: this.mouse },
+            uMouse: { value: new THREE.Vector2(0,0) },
+            uMouseActive: { value: 0.0 },
+            uVelocity: { value: new THREE.Vector2(0,0) },
             uColor: { value: new THREE.Color(this.config.color === 'auto' ? '#ffffff' : this.config.color) },
             uGrid: { value: new THREE.Vector2(cols, rows) },
             uDotScale: { value: this.config.dotScale },
@@ -220,7 +225,7 @@ export default class Halftone3D {
     }
 
     _getInteractionId(type) {
-        return { 'none': 0, 'repulse': 1, 'attract': 2, 'vortex': 3, 'ripple': 4 }[type] || 0;
+        return { 'none': 0, 'repulse': 1, 'attract': 2, 'vortex': 3, 'ripple': 4, 'fireball': 5 }[type] || 0;
     }
 
     _getFitId(fit) {
@@ -229,9 +234,9 @@ export default class Halftone3D {
 
     _getVertexShader() {
         return `
-            uniform sampler2D uTexture;
-            uniform float uBrightness, uContrast, uRadius, uStrength, uDotScale, uTime, uGap, uSourceAspect, uContainerAspect;
-            uniform vec2 uMouse, uGrid;
+            uniform sampler2D uTexture, uTrail;
+            uniform float uBrightness, uContrast, uRadius, uStrength, uDotScale, uTime, uGap, uSourceAspect, uContainerAspect, uMouseActive;
+            uniform vec2 uMouse, uGrid, uVelocity;
             uniform int uInteraction, uFit;
             attribute vec3 instancePos;
             attribute vec2 instanceUV;
@@ -252,24 +257,34 @@ export default class Halftone3D {
                 return newUv;
             }
 
+            float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453123); }
+
             void main() {
                 vec2 correctedUV = getFitUV(instanceUV, uContainerAspect, uSourceAspect, uFit);
-                
-                // Sample texture
                 vec4 texColor = texture2D(uTexture, correctedUV);
                 vColor = texColor.rgb;
-
-                // Out of bounds check for contain mode
-                bool oob = (uFit == 2) && (correctedUV.x < 0.0 || correctedUV.x > 1.0 || correctedUV.y < 0.0 || correctedUV.y > 1.0);
                 
-                float luma = oob ? 0.0 : dot(vColor, vec3(0.299, 0.587, 0.114));
-                float scale = pow(clamp(luma * uBrightness, 0.0, 1.0), uContrast);
-                vScale = scale;
+                // Sample Trail Map
+                float heat = texture2D(uTrail, instanceUV).r;
 
+                bool oob = (uFit == 2) && (correctedUV.x < 0.0 || correctedUV.x > 1.0 || correctedUV.y < 0.0 || correctedUV.y > 1.0);
+                float luma = oob ? 0.0 : dot(vColor, vec3(0.299, 0.587, 0.114));
+                float baseScale = pow(clamp(luma * uBrightness, 0.0, 1.0), uContrast);
+                
                 float d = distance(instancePos.xy, uMouse);
                 vec2 disp = vec2(0.0);
-                if (d < uRadius) {
-                    float f = (1.0 - d / uRadius) * uStrength;
+                float interactScale = 1.0;
+
+                if (uInteraction == 5) { // Fireball / Comet Physics
+                    float speed = length(uVelocity);
+                    float f = heat * uStrength;
+                    vec2 dir = normalize(instancePos.xy - uMouse + 0.001); 
+                    disp = (uVelocity * f * 2.0) + (dir * f * 0.05);
+                    interactScale = 1.0 + (f * 1.5 * (1.0 + speed * 8.0));
+                    float jitter = hash(instancePos.xy + uTime) - 0.5;
+                    disp += jitter * f * 0.005; 
+                } else if (d < uRadius) {
+                    float f = (1.0 - d / uRadius) * uStrength * uMouseActive;
                     vec2 dir = normalize(instancePos.xy - uMouse);
                     if (uInteraction == 1) disp = dir * f * 0.15;
                     else if (uInteraction == 2) disp = -dir * f * 0.15;
@@ -278,10 +293,11 @@ export default class Halftone3D {
                 }
 
                 float cellSize = (2.0 / uGrid.x) - (uGap * 0.01);
-                float finalSize = cellSize * uDotScale * (0.05 + scale * 0.95);
+                float finalSize = cellSize * uDotScale * (0.05 + baseScale * 0.95) * interactScale;
                 vec3 pos = position * finalSize;
                 ${this.config.shape === 'diamond' ? 'float a = 0.785; pos.xy = mat2(cos(a),-sin(a),sin(a),cos(a)) * pos.xy;' : ''}
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(pos + instancePos + vec3(disp, 0.0), 1.0);
+                vScale = baseScale * interactScale;
             }
         `;
     }
@@ -313,35 +329,65 @@ export default class Halftone3D {
 
     _setupEvents() {
         this._resizeHandler = this.onResize.bind(this);
-        this._mouseHandler = this.onMouseMove.bind(this);
+        this._mouseHandler = (e) => {
+            const r = this.container.getBoundingClientRect();
+            const nx = ((e.clientX - r.left) / r.width) * 2 - 1;
+            const ny = -(((e.clientY - r.top) / r.height) * (2/(this.width/this.height)) - (1/(this.width/this.height))); 
+            
+            // Draw into Trail Map
+            if (this.trailCtx) {
+                const tx = ((e.clientX - r.left) / r.width) * 128;
+                const ty = ((e.clientY - r.top) / r.height) * 128;
+                const speed = Math.min(length(this.velocity) * 100, 20);
+                this.trailCtx.beginPath();
+                this.trailCtx.arc(tx, ty, 8 + speed, 0, Math.PI*2);
+                this.trailCtx.fillStyle = 'white';
+                this.trailCtx.fill();
+            }
+
+            this.mouse.set(nx, ny);
+            this._isMouseOver = true;
+        };
+        this._leaveHandler = () => this._isMouseOver = false;
+        this._enterHandler = () => this._isMouseOver = true;
+
         window.addEventListener('resize', this._resizeHandler);
         window.addEventListener('mousemove', this._mouseHandler);
+        this.container.addEventListener('mouseenter', this._enterHandler);
+        this.container.addEventListener('mouseleave', this._leaveHandler);
     }
 
     onResize() {
         this.width = this.container.clientWidth;
         this.height = this.container.clientHeight;
         const aspect = this.width / this.height;
+        this.camera.left = -1; this.camera.right = 1;
         this.camera.top = 1/aspect; this.camera.bottom = -1/aspect;
         this.camera.updateProjectionMatrix();
-        this.renderer.setSize(this.width, this.height);
+        this.renderer.setSize(this.width, this.height, false);
         if (this.uniforms) this.uniforms.uContainerAspect.value = aspect;
-        if (this._init) this._setupGrid();
-    }
-
-    onMouseMove(e) {
-        const r = this.container.getBoundingClientRect();
-        const nx = ((e.clientX - r.left) / r.width) * 2 - 1;
-        const ny = -(((e.clientY - r.top) / r.height) * (2/(this.width/this.height)) - (1/(this.width/this.height))); 
-        this.mouse.set(nx, ny);
+        clearTimeout(this._resizeTimer);
+        this._resizeTimer = setTimeout(() => { if (this._init) this._setupGrid(); }, 100); 
     }
 
     animate() {
         this._raf = requestAnimationFrame(this.animate.bind(this));
         this.time += 0.05;
+        
         if (this.uniforms) {
             this.uniforms.uTime.value = this.time;
             this.uniforms.uMouse.value.lerp(this.mouse, 0.1);
+            
+            // Smooth velocity (The culprit for the shaking)
+            this.velocity.subVectors(this.mouse, this.prevMouse);
+            this.uniforms.uVelocity.value.lerp(this.velocity, 0.05); // Very smooth lerp
+            this.prevMouse.copy(this.mouse);
+            
+            const targetActive = this._isMouseOver ? 1.0 : 0.0;
+            this.mouseActive += (targetActive - this.mouseActive) * 0.1;
+            this.uniforms.uMouseActive.value = this.mouseActive;
+            
+            this._updateTrail();
         }
         this.renderer.render(this.scene, this.camera);
     }
@@ -350,6 +396,8 @@ export default class Halftone3D {
         cancelAnimationFrame(this._raf);
         window.removeEventListener('resize', this._resizeHandler);
         window.removeEventListener('mousemove', this._mouseHandler);
+        this.container.removeEventListener('mouseenter', this._enterHandler);
+        this.container.removeEventListener('mouseleave', this._leaveHandler);
         this.renderer.dispose();
         this.mesh.geometry.dispose();
         this.mesh.material.dispose();
@@ -357,7 +405,8 @@ export default class Halftone3D {
     }
 }
 
-// Auto-init for data attributes
+function length(v) { return Math.sqrt(v.x*v.x + v.y*v.y); }
+
 if (typeof window !== 'undefined') {
     window.Halftone3D = Halftone3D;
     const init = () => {
