@@ -174,7 +174,7 @@
       border: 1px solid #1e1e28;
       border-radius: 12px;
       padding: 20px;
-      max-height: 480px;
+      max-height: 640px;
       overflow-y: auto;
     }
     .playground-controls h3 {
@@ -256,6 +256,145 @@
       background: #252530;
     }
     .source-row input[type="file"] { display: none; }
+
+    /* ─── Color pickers ─── */
+    input[type="color"] {
+      width: 100%;
+      height: 30px;
+      border: 1px solid #2a2a35;
+      border-radius: 6px;
+      background: #1a1a22;
+      cursor: pointer;
+      padding: 2px;
+    }
+    input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+    input[type="color"]::-webkit-color-swatch { border: none; border-radius: 4px; }
+
+    /* ─── Text inputs ─── */
+    input[type="text"] {
+      width: 100%;
+      background: #1a1a22;
+      border: 1px solid #2a2a35;
+      color: #ddd;
+      padding: 6px 8px;
+      font-size: 12px;
+      font-family: monospace;
+      border-radius: 6px;
+      outline: none;
+    }
+    input[type="text"]:focus {
+      border-color: #E85002;
+    }
+
+    /* ─── Checkbox ─── */
+    .field-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .field-checkbox label {
+      font-size: 12px;
+      color: #999;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .field-checkbox input[type="checkbox"] {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: #1a1a22;
+      border: 1px solid #2a2a35;
+      border-radius: 4px;
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .field-checkbox input[type="checkbox"]:checked {
+      background: #E85002;
+      border-color: #E85002;
+    }
+    .field-checkbox input[type="checkbox"]:checked::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* ─── Code Output Panel ─── */
+    .code-output {
+      margin-top: 32px;
+      background: #111118;
+      border: 1px solid #1e1e28;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .code-tabs {
+      display: flex;
+      border-bottom: 1px solid #1e1e28;
+    }
+    .code-tab {
+      flex: 1;
+      padding: 10px 16px;
+      background: transparent;
+      border: none;
+      color: #666;
+      font-size: 12px;
+      cursor: pointer;
+      transition: color 0.2s, background 0.2s;
+      text-align: center;
+    }
+    .code-tab:hover {
+      color: #999;
+    }
+    .code-tab.active {
+      color: #E85002;
+      background: rgba(232, 80, 2, 0.05);
+      border-bottom: 2px solid #E85002;
+    }
+    .code-panel {
+      position: relative;
+      padding: 16px;
+    }
+    .code-panel pre {
+      margin: 0;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #c8c8d0;
+      white-space: pre;
+      overflow-x: auto;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 5px 12px;
+      background: #1a1a22;
+      border: 1px solid #2a2a35;
+      color: #999;
+      font-size: 11px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .copy-btn:hover {
+      background: #252530;
+      color: #ddd;
+    }
+    .copy-btn.copied {
+      background: #1a3a1a;
+      border-color: #2a5a2a;
+      color: #4ade80;
+    }
 
     /* ─── Responsive ─── */
     @media (max-width: 768px) {
@@ -468,6 +607,7 @@
       <div class="playground-controls">
         <h3>Parameters</h3>
 
+        <!-- Source -->
         <div class="ctrl-group">Source</div>
         <div class="source-row">
           <label title="Upload image or video">
@@ -476,8 +616,17 @@
           </label>
           <button id="webcamBtn">Webcam</button>
         </div>
+        <div class="field" style="margin-top:8px">
+          <label>Fit</label>
+          <select id="pg-fit">
+            <option value="cover" selected>cover</option>
+            <option value="contain">contain</option>
+            <option value="fill">fill</option>
+          </select>
+        </div>
 
-        <div class="ctrl-group">Shape</div>
+        <!-- Shape & Mode -->
+        <div class="ctrl-group">Shape &amp; Mode</div>
         <div class="field">
           <label>Shape</label>
           <select id="pg-shape">
@@ -514,10 +663,15 @@
           </select>
         </div>
 
+        <!-- Screen & Dot -->
         <div class="ctrl-group">Screen &amp; Dot</div>
         <div class="field">
           <label>Frequency <span id="val-frequency">40</span></label>
           <input type="range" id="pg-frequency" min="5" max="150" step="1" value="40">
+        </div>
+        <div class="field">
+          <label>Angle <span id="val-angle">0</span></label>
+          <input type="range" id="pg-angle" min="0" max="90" step="1" value="0">
         </div>
         <div class="field">
           <label>Scale <span id="val-scale">1.0</span></label>
@@ -532,6 +686,7 @@
           <input type="range" id="pg-gap" min="0" max="1" step="0.01" value="0">
         </div>
 
+        <!-- Tone -->
         <div class="ctrl-group">Tone</div>
         <div class="field">
           <label>Contrast <span id="val-contrast">1.8</span></label>
@@ -541,6 +696,62 @@
           <label>Brightness <span id="val-brightness">1.0</span></label>
           <input type="range" id="pg-brightness" min="0.1" max="3.0" step="0.05" value="1.0">
         </div>
+        <div class="field">
+          <label>Min Dot <span id="val-minDot">0.0</span></label>
+          <input type="range" id="pg-minDot" min="0" max="1" step="0.01" value="0">
+        </div>
+        <div class="field-checkbox">
+          <label>
+            <input type="checkbox" id="pg-invert">
+            Invert
+          </label>
+        </div>
+
+        <!-- Color -->
+        <div class="ctrl-group">Color</div>
+        <div class="field">
+          <label>Color</label>
+          <input type="color" id="pg-color" value="#E85002">
+        </div>
+        <div class="field">
+          <label>Color B</label>
+          <input type="color" id="pg-colorB" value="#000000">
+        </div>
+        <div class="field">
+          <label>Background</label>
+          <input type="color" id="pg-bgColor" value="#050510">
+        </div>
+        <div class="field" id="cmykAngles-field" style="display:none">
+          <label>CMYK Angles</label>
+          <input type="text" id="pg-cmykAngles" value="15, 75, 0, 45" placeholder="C, M, Y, K angles">
+        </div>
+
+        <!-- Interaction -->
+        <div class="ctrl-group">Interaction</div>
+        <div class="field">
+          <label>Radius <span id="val-radius">0.3</span></label>
+          <input type="range" id="pg-radius" min="0.05" max="1.0" step="0.01" value="0.3">
+        </div>
+        <div class="field">
+          <label>Strength <span id="val-strength">0.5</span></label>
+          <input type="range" id="pg-strength" min="0.0" max="2.0" step="0.05" value="0.5">
+        </div>
+        <div class="field">
+          <label>Trail Fade <span id="val-trailFade">0.03</span></label>
+          <input type="range" id="pg-trailFade" min="0.0" max="0.5" step="0.01" value="0.03">
+        </div>
+      </div>
+    </div>
+
+    <!-- Code Output -->
+    <div class="code-output" id="code-output">
+      <div class="code-tabs">
+        <button class="code-tab active" onclick="switchCodeTab('html')">Data Attributes</button>
+        <button class="code-tab" onclick="switchCodeTab('js')">JavaScript</button>
+      </div>
+      <div class="code-panel">
+        <pre id="code-pre"></pre>
+        <button class="copy-btn" id="copy-btn" onclick="copyCode()">Copy</button>
       </div>
     </div>
   </div>
@@ -552,42 +763,170 @@
   <!-- ─── Scripts ─── -->
   <script src="dist/halftone-webgl.min.js"></script>
   <script>
-    // ─── Playground Instance (JS API) ───
+    // ─── Defaults (must match DEFAULTS in utils.js) ───
+    const DEFAULTS = {
+      frequency: 40, angle: 0, shape: 'circle', scale: 1.0, softness: 0.5,
+      gap: 0, contrast: 1.8, brightness: 1.0, invert: false, minDot: 0.0,
+      colorMode: 'mono', color: '#E85002', colorB: '#000000', bgColor: '#050510',
+      cmykAngles: [15, 75, 0, 45], source: null, fit: 'cover',
+      interaction: 'none', radius: 0.3, strength: 0.5, trailFade: 0.03,
+    };
+
+    // ─── Current playground config (tracks non-default values) ───
+    const pgConfig = {
+      interaction: 'sparkle',
+    };
+
+    // ─── Playground Instance ───
     const pg = new HalftoneWebGL({
       container: '#pg-canvas',
       source: 'https://picsum.photos/seed/halftone-playground/1200/800',
       interaction: 'sparkle',
     });
 
-    // Sliders
-    const sliders = ['frequency', 'scale', 'softness', 'gap', 'contrast', 'brightness'];
+    // ─── Sliders ───
+    const sliders = [
+      'frequency', 'angle', 'scale', 'softness', 'gap',
+      'contrast', 'brightness', 'minDot',
+      'radius', 'strength', 'trailFade',
+    ];
     sliders.forEach(id => {
       const el = document.getElementById('pg-' + id);
       el.addEventListener('input', () => {
         const v = parseFloat(el.value);
         document.getElementById('val-' + id).textContent = v;
         pg.set(id, v);
+        if (v === DEFAULTS[id]) delete pgConfig[id];
+        else pgConfig[id] = v;
+        updateCodeOutput();
       });
     });
 
-    // Selects
-    ['shape', 'colorMode', 'interaction'].forEach(id => {
+    // ─── Selects ───
+    ['shape', 'colorMode', 'interaction', 'fit'].forEach(id => {
       document.getElementById('pg-' + id).addEventListener('change', e => {
-        pg.set(id, e.target.value);
+        const v = e.target.value;
+        pg.set(id, v);
+        if (v === DEFAULTS[id]) delete pgConfig[id];
+        else pgConfig[id] = v;
+        // Show/hide cmykAngles
+        if (id === 'colorMode') {
+          document.getElementById('cmykAngles-field').style.display =
+            v === 'cmyk' ? '' : 'none';
+        }
+        updateCodeOutput();
       });
     });
 
-    // File upload
+    // ─── Color Pickers ───
+    ['color', 'colorB', 'bgColor'].forEach(id => {
+      document.getElementById('pg-' + id).addEventListener('input', e => {
+        const v = e.target.value;
+        pg.set(id, v);
+        if (v.toLowerCase() === DEFAULTS[id].toLowerCase()) delete pgConfig[id];
+        else pgConfig[id] = v;
+        updateCodeOutput();
+      });
+    });
+
+    // ─── Checkbox (invert) ───
+    document.getElementById('pg-invert').addEventListener('change', e => {
+      const v = e.target.checked;
+      pg.set('invert', v);
+      if (v === DEFAULTS.invert) delete pgConfig.invert;
+      else pgConfig.invert = v;
+      updateCodeOutput();
+    });
+
+    // ─── CMYK Angles ───
+    document.getElementById('pg-cmykAngles').addEventListener('change', e => {
+      const parts = e.target.value.split(',').map(s => parseFloat(s.trim()));
+      if (parts.length === 4 && parts.every(n => !isNaN(n))) {
+        pg.set('cmykAngles', parts);
+        const isDefault = parts.every((v, i) => v === DEFAULTS.cmykAngles[i]);
+        if (isDefault) delete pgConfig.cmykAngles;
+        else pgConfig.cmykAngles = parts;
+        updateCodeOutput();
+      }
+    });
+
+    // ─── File Upload ───
     document.getElementById('fileUpload').addEventListener('change', e => {
       const file = e.target.files[0];
       if (!file) return;
       pg.loadSource(URL.createObjectURL(file)).catch(() => {});
     });
 
-    // Webcam
+    // ─── Webcam ───
     document.getElementById('webcamBtn').addEventListener('click', () => {
       pg.loadSource('webcam').catch(() => {});
     });
+
+    // ─── Code Output ───
+    let codeTabMode = 'html';
+
+    function camelToKebab(str) {
+      return str.replace(/([A-Z])/g, '-$1').toLowerCase();
+    }
+
+    function generateHTML() {
+      const keys = Object.keys(pgConfig);
+      if (keys.length === 0) {
+        return '<div data-hwgl-element\n     data-hwgl-source="photo.jpg"\n     style="width: 100%; height: 400px;">\n</div>';
+      }
+      let attrs = '     data-hwgl-source="photo.jpg"';
+      keys.forEach(k => {
+        const attrName = 'data-hwgl-' + camelToKebab(k);
+        const val = Array.isArray(pgConfig[k])
+          ? pgConfig[k].join(',')
+          : pgConfig[k];
+        attrs += '\n     ' + attrName + '="' + val + '"';
+      });
+      return '<div data-hwgl-element\n' + attrs + '\n     style="width: 100%; height: 400px;">\n</div>';
+    }
+
+    function generateJS() {
+      const keys = Object.keys(pgConfig);
+      let props = "  container: '#my-element',\n  source: 'photo.jpg',";
+      keys.forEach(k => {
+        const val = pgConfig[k];
+        let formatted;
+        if (typeof val === 'string') formatted = "'" + val + "'";
+        else if (Array.isArray(val)) formatted = '[' + val.join(', ') + ']';
+        else formatted = val;
+        props += '\n  ' + k + ': ' + formatted + ',';
+      });
+      return 'const ht = new HalftoneWebGL({\n' + props + '\n});';
+    }
+
+    function updateCodeOutput() {
+      const pre = document.getElementById('code-pre');
+      pre.textContent = codeTabMode === 'html' ? generateHTML() : generateJS();
+    }
+
+    function switchCodeTab(mode) {
+      codeTabMode = mode;
+      document.querySelectorAll('.code-tab').forEach((tab, i) => {
+        tab.classList.toggle('active', (i === 0 && mode === 'html') || (i === 1 && mode === 'js'));
+      });
+      updateCodeOutput();
+    }
+
+    function copyCode() {
+      const text = document.getElementById('code-pre').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copy-btn');
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1500);
+      });
+    }
+
+    // Initial render
+    updateCodeOutput();
   </script>
 </body>
 </html>
