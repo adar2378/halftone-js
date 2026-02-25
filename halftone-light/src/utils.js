@@ -18,6 +18,7 @@ export const DEFAULTS = {
   shape: 'circle',
   scale: 1.0,
   softness: 0.5,
+  gap: 0,
   // Tone
   contrast: 1.8,
   brightness: 1.0,

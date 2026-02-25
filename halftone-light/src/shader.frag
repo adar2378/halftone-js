@@ -14,6 +14,7 @@ uniform float uAngle;
 uniform int uShape;        // 0=circle, 1=square, 2=diamond, 3=line, 4=cross, 5=ellipse
 uniform float uScale;
 uniform float uSoftness;
+uniform float uGap;
 
 // Tone
 uniform float uContrast;
@@ -161,7 +162,7 @@ float halftoneChannel(vec2 uv, float freq, float angleRad, float dotSize, int sh
   float dist = getSDF(p, shape);
 
   // Dot radius from intensity
-  float radius = dotSize * uScale * 0.5;
+  float radius = max(dotSize * uScale * 0.5 - uGap * 0.5, 0.0);
 
   // Anti-aliased edge
   float edgeWidth = softness * 0.15 + 0.01;

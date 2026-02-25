@@ -63,6 +63,7 @@ export function createRenderer(container, config) {
     uShape: { value: SHAPE_IDS[config.shape] || 0 },
     uScale: { value: config.scale },
     uSoftness: { value: config.softness },
+    uGap: { value: config.gap },
     // Tone
     uContrast: { value: config.contrast },
     uBrightness: { value: config.brightness },
@@ -121,6 +122,9 @@ export function updateUniform(uniforms, key, value, config) {
       break;
     case 'softness':
       uniforms.uSoftness.value = value;
+      break;
+    case 'gap':
+      uniforms.uGap.value = value;
       break;
     case 'contrast':
       uniforms.uContrast.value = value;
