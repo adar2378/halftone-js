@@ -161,5 +161,8 @@ export function updateUniform(uniforms, key, value, config) {
     case 'strength':
       uniforms.uStrength.value = value;
       break;
+    case 'trailFade':
+      // JS-side only — handled by the active effect, no shader uniform
+      break;
   }
 }

@@ -10,6 +10,7 @@ import {
   updateVideoTexture,
 } from './texture.js';
 import cometEffect from './effects/comet.js';
+import sparkleEffect from './effects/sparkle.js';
 
 class HalftoneLight extends EventEmitter {
   constructor(options = {}) {
@@ -71,9 +72,11 @@ class HalftoneLight extends EventEmitter {
     // Set up events
     this._setupEvents();
 
-    // Set up comet effect if initial interaction is 'comet'
+    // Set up trail-based effects if initial interaction requires one
     if (this._config.interaction === 'comet') {
       this._setupEffect('comet');
+    } else if (this._config.interaction === 'sparkle') {
+      this._setupEffect('sparkle');
     }
 
     // Load source if provided
@@ -259,6 +262,11 @@ class HalftoneLight extends EventEmitter {
       this._uniforms.uTrail.value = trailTexture;
       this._uniforms.uHasTrail.value = 1;
       this._activeEffect = cometEffect;
+    } else if (name === 'sparkle') {
+      const { trailTexture } = sparkleEffect.setup(this._gl, this._config);
+      this._uniforms.uTrail.value = trailTexture;
+      this._uniforms.uHasTrail.value = 1;
+      this._activeEffect = sparkleEffect;
     }
   }
 
@@ -280,10 +288,15 @@ class HalftoneLight extends EventEmitter {
       this._hasInteraction = value !== 'none';
       if (value === 'comet') {
         this._setupEffect('comet');
+      } else if (value === 'sparkle') {
+        this._setupEffect('sparkle');
       } else {
         this._teardownEffect();
       }
       this._updatePlayState();
+    }
+    if (key === 'trailFade' && this._activeEffect && this._activeEffect.setFade) {
+      this._activeEffect.setFade(value);
     }
     if (key === 'source') {
       this.loadSource(value).catch(e => this.emit('error', e));

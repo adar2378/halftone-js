@@ -57,6 +57,12 @@ float luminance(vec3 c) {
   return dot(c, vec3(0.299, 0.587, 0.114));
 }
 
+float hash21(vec2 p) {
+  p = fract(p * vec2(233.34, 851.73));
+  p += dot(p, p + 23.45);
+  return fract(p.x * p.y);
+}
+
 // ─── Fit UV ───
 
 vec2 fitUV(vec2 uv) {
@@ -180,7 +186,7 @@ InteractionResult computeInteraction(vec2 uv) {
   r.reveal = 0.0;
   r.hueShift = 0.0;
 
-  if (uInteraction == 0 || uMouseActive < 0.01) return r;
+  if (uInteraction == 0 || uInteraction == 9 || uMouseActive < 0.01) return r;
 
   vec2 aspect = vec2(uContainerAspect, 1.0);
   vec2 delta = (uv - uMouse) * aspect;
@@ -225,7 +231,6 @@ InteractionResult computeInteraction(vec2 uv) {
       r.uv = uv + normalize(uVelocity) * heat * 0.02;
     }
   }
-
   return r;
 }
 
@@ -258,24 +263,44 @@ void main() {
   vec2 gridUV = interact.uv;
   float freq = uFrequency * interact.freqMul;
 
+  // Compute cell info (needed for sparkle + texture sampling)
+  vec2 rotUV = rot2d(uAngle) * (gridUV - 0.5) + 0.5;
+  vec2 cellGridUV = rotUV * freq;
+  vec2 cellIdx = floor(cellGridUV);
+  vec2 cellCenter = (cellIdx + 0.5) / freq;
+  vec2 cellWorldUV = rot2d(-uAngle) * (cellCenter - 0.5) + 0.5;
+
   // Sample source texture
-  vec2 texUV = fitUV(gridUV);
   vec3 srcColor = vec3(0.0);
   float srcLuma = 0.5;
 
   if (uHasTexture > 0.5) {
-    // Sample at cell center for crisp halftone
-    vec2 rotUV = rot2d(uAngle) * (gridUV - 0.5) + 0.5;
-    vec2 cellGridUV = rotUV * freq;
-    vec2 cell = (floor(cellGridUV) + 0.5) / freq;
-    vec2 cellWorldUV = rot2d(-uAngle) * (cell - 0.5) + 0.5;
     vec2 cellTexUV = fitUV(cellWorldUV);
-
     srcColor = texture2D(uTexture, clamp(cellTexUV, 0.0, 1.0)).rgb;
     srcLuma = luminance(srcColor);
   }
 
   float dotSize = toneCurve(srcLuma) * interact.sizeMul;
+
+  // Sparkle: trail heatmap + per-cell noise for irregular, movement-driven sparkle
+  float sparkleAmount = 0.0;
+
+  if (uInteraction == 9 && uHasTrail > 0.5 && uMouseActive > 0.01) {
+    float heat = texture2D(uTrail, uv).r;
+
+    if (heat > 0.01) {
+      // Per-cell random phase — each cell oscillates differently
+      float h = hash21(cellIdx);
+      float phase = h * 6.2832;
+
+      // Smooth wave driven by cursor movement (not time)
+      float wave = sin(dot(uMouse, vec2(25.0, 19.0)) + phase) * 0.5 + 0.5;
+
+      // Center (high heat) stays uniformly bright, edges get noisy scatter
+      float noise = mix(wave, 1.0, heat * heat);
+      sparkleAmount = heat * noise * uMouseActive * uStrength;
+    }
+  }
 
   vec3 finalColor;
 
@@ -286,6 +311,12 @@ void main() {
     float mDot = toneCurve(1.0 - cmyk.y) * interact.sizeMul;
     float yDot = toneCurve(1.0 - cmyk.z) * interact.sizeMul;
     float kDot = toneCurve(1.0 - cmyk.w) * interact.sizeMul;
+
+    // Sparkle: push CMYK dots toward max size near cursor
+    cDot = mix(cDot, 1.0, sparkleAmount);
+    mDot = mix(mDot, 1.0, sparkleAmount);
+    yDot = mix(yDot, 1.0, sparkleAmount);
+    kDot = mix(kDot, 1.0, sparkleAmount);
 
     float cMask = halftoneChannel(gridUV, freq, uCmykAngles.x, cDot, uShape, uSoftness);
     float mMask = halftoneChannel(gridUV, freq, uCmykAngles.y, mDot, uShape, uSoftness);
@@ -303,6 +334,7 @@ void main() {
   }
   else {
     // ─── Single-channel halftone ───
+    dotSize = mix(dotSize, 1.0, sparkleAmount);
     float mask = halftoneChannel(gridUV, freq, uAngle, dotSize, uShape, uSoftness);
 
     vec3 dotColor;
