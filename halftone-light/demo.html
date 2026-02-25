@@ -293,7 +293,7 @@
   <div class="hero-container"
        data-hl-element
        data-hl-source="https://picsum.photos/seed/halftone-hero/1400/900"
-       data-hl-interaction="reveal"
+       data-hl-interaction="sparkle"
        data-hl-color-mode="auto"
        data-hl-frequency="45"
        data-hl-softness="0.4"
@@ -319,7 +319,7 @@
              data-hl-source="https://picsum.photos/seed/halftone-banner/1200/400"
              data-hl-shape="line"
              data-hl-color-mode="mono"
-             data-hl-interaction="magnify"
+             data-hl-interaction="sparkle"
              data-hl-frequency="50"
              data-hl-color="#E85002"
              data-hl-bg-color="#0a0a0f"
@@ -338,7 +338,7 @@
              data-hl-source="https://picsum.photos/seed/halftone-portrait/600/800"
              data-hl-shape="circle"
              data-hl-color-mode="auto"
-             data-hl-interaction="warp"
+             data-hl-interaction="sparkle"
              data-hl-frequency="35"
              style="width:100%;height:100%">
         </div>
@@ -355,7 +355,7 @@
              data-hl-source="https://picsum.photos/seed/halftone-square/600/600"
              data-hl-shape="diamond"
              data-hl-color-mode="cmyk"
-             data-hl-interaction="ripple"
+             data-hl-interaction="sparkle"
              data-hl-frequency="40"
              style="width:100%;height:100%">
         </div>
@@ -374,7 +374,7 @@
              data-hl-color-mode="duotone"
              data-hl-color="#6B5CE7"
              data-hl-color-b="#E85002"
-             data-hl-interaction="vortex"
+             data-hl-interaction="sparkle"
              data-hl-frequency="35"
              style="width:100%;height:100%">
         </div>
@@ -385,6 +385,29 @@
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       Light Mode Example
+       ════════════════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">Light Background</div>
+    <div class="light-container"
+         data-hl-element
+         data-hl-source="https://picsum.photos/seed/halftone-light-bg/1200/600"
+         data-hl-interaction="sparkle"
+         data-hl-color-mode="auto"
+         data-hl-frequency="40"
+         data-hl-bg-color="#ffffff"
+         data-hl-softness="0.5"
+         data-hl-strength="0.6"
+         style="height:360px;border-radius:12px;overflow:hidden">
+      <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100%;text-align:center;gap:12px;padding:32px">
+        <h2 style="font-size:32px;font-weight:700;color:#111;letter-spacing:-1px">Works on light backgrounds too</h2>
+        <p style="font-size:15px;color:#555;max-width:440px">Set <code style="background:#e8e8e8;padding:2px 6px;border-radius:4px;color:#333">bgColor: '#ffffff'</code> for a clean, light aesthetic.</p>
+        <button style="margin-top:8px;padding:10px 24px;background:#111;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">Dark Button</button>
+      </div>
     </div>
   </div>
 
@@ -401,7 +424,7 @@
       <div class="card-container"
            data-hl-element
            data-hl-source="https://picsum.photos/seed/halftone-card-a/800/600"
-           data-hl-interaction="reveal"
+           data-hl-interaction="sparkle"
            data-hl-color-mode="auto"
            data-hl-frequency="40"
            data-hl-softness="0.6"
@@ -417,7 +440,7 @@
       <div class="card-container"
            data-hl-element
            data-hl-source="https://picsum.photos/seed/halftone-card-b/800/600"
-           data-hl-interaction="magnify"
+           data-hl-interaction="sparkle"
            data-hl-shape="cross"
            data-hl-color-mode="mono"
            data-hl-color="#00D4AA"
@@ -479,7 +502,7 @@
           <label>Interaction</label>
           <select id="pg-interaction">
             <option value="none">none</option>
-            <option value="reveal" selected>reveal</option>
+            <option value="reveal">reveal</option>
             <option value="magnify">magnify</option>
             <option value="warp">warp</option>
             <option value="ripple">ripple</option>
@@ -487,7 +510,7 @@
             <option value="colorShift">colorShift</option>
             <option value="focus">focus</option>
             <option value="comet">comet</option>
-            <option value="sparkle">sparkle</option>
+            <option value="sparkle" selected>sparkle</option>
           </select>
         </div>
 
@@ -533,7 +556,7 @@
     const pg = new HalftoneLight({
       container: '#pg-canvas',
       source: 'https://picsum.photos/seed/halftone-playground/1200/800',
-      interaction: 'reveal',
+      interaction: 'sparkle',
     });
 
     // Sliders

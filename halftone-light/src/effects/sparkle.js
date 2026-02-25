@@ -3,77 +3,77 @@ import { Texture } from 'ogl';
 const TRAIL_SIZE = 128;
 const BRUSH_RADIUS = 12;
 
-export default {
-  name: 'sparkle',
+export default function createSparkleEffect() {
+  let _canvas, _ctx, _texture, _gl, _fadeAlpha;
 
-  setup(gl, config) {
-    const canvas = document.createElement('canvas');
-    canvas.width = TRAIL_SIZE;
-    canvas.height = TRAIL_SIZE;
-    const ctx = canvas.getContext('2d');
+  return {
+    name: 'sparkle',
 
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, TRAIL_SIZE, TRAIL_SIZE);
+    setup(gl, config) {
+      _canvas = document.createElement('canvas');
+      _canvas.width = TRAIL_SIZE;
+      _canvas.height = TRAIL_SIZE;
+      _ctx = _canvas.getContext('2d');
 
-    const texture = new Texture(gl, {
-      image: canvas,
-      generateMipmaps: false,
-      minFilter: gl.LINEAR,
-      magFilter: gl.LINEAR,
-    });
+      _ctx.fillStyle = '#000';
+      _ctx.fillRect(0, 0, TRAIL_SIZE, TRAIL_SIZE);
 
-    this._canvas = canvas;
-    this._ctx = ctx;
-    this._texture = texture;
-    this._gl = gl;
-    this._fadeAlpha = (config && config.trailFade) || 0.03;
+      _texture = new Texture(gl, {
+        image: _canvas,
+        generateMipmaps: false,
+        minFilter: gl.LINEAR,
+        magFilter: gl.LINEAR,
+      });
 
-    return { trailTexture: texture };
-  },
+      _gl = gl;
+      _fadeAlpha = (config && config.trailFade) || 0.03;
 
-  setFade(fadeAlpha) {
-    this._fadeAlpha = fadeAlpha;
-  },
+      return { trailTexture: _texture };
+    },
 
-  update(state) {
-    const { mouse, mouseActive, velocity } = state;
-    const ctx = this._ctx;
+    setFade(fadeAlpha) {
+      _fadeAlpha = fadeAlpha;
+    },
 
-    // 1. Fade the trail canvas
-    ctx.fillStyle = `rgba(0,0,0,${this._fadeAlpha})`;
-    ctx.fillRect(0, 0, TRAIL_SIZE, TRAIL_SIZE);
+    update(state) {
+      const { mouse, mouseActive, velocity } = state;
 
-    // 2. Draw soft glow only when cursor is moving
-    const speed = Math.sqrt(velocity[0] * velocity[0] + velocity[1] * velocity[1]);
-    if (mouseActive > 0.1 && speed > 0.0005) {
-      const x = mouse[0] * TRAIL_SIZE;
-      const y = (1.0 - mouse[1]) * TRAIL_SIZE;
+      // 1. Fade the trail canvas
+      _ctx.fillStyle = `rgba(0,0,0,${_fadeAlpha})`;
+      _ctx.fillRect(0, 0, TRAIL_SIZE, TRAIL_SIZE);
 
-      const gradient = ctx.createRadialGradient(x, y, 0, x, y, BRUSH_RADIUS);
-      gradient.addColorStop(0, `rgba(255,255,255,${mouseActive * 0.8})`);
-      gradient.addColorStop(1, 'rgba(255,255,255,0)');
+      // 2. Draw soft glow only when cursor is moving
+      const speed = Math.sqrt(velocity[0] * velocity[0] + velocity[1] * velocity[1]);
+      if (mouseActive > 0.1 && speed > 0.0005) {
+        const x = mouse[0] * TRAIL_SIZE;
+        const y = (1.0 - mouse[1]) * TRAIL_SIZE;
 
-      ctx.fillStyle = gradient;
-      ctx.beginPath();
-      ctx.arc(x, y, BRUSH_RADIUS, 0, Math.PI * 2);
-      ctx.fill();
-    }
+        const gradient = _ctx.createRadialGradient(x, y, 0, x, y, BRUSH_RADIUS);
+        gradient.addColorStop(0, `rgba(255,255,255,${mouseActive * 0.8})`);
+        gradient.addColorStop(1, 'rgba(255,255,255,0)');
 
-    // 3. Upload to GPU
-    this._texture.image = this._canvas;
-    this._texture.needsUpdate = true;
-  },
+        _ctx.fillStyle = gradient;
+        _ctx.beginPath();
+        _ctx.arc(x, y, BRUSH_RADIUS, 0, Math.PI * 2);
+        _ctx.fill();
+      }
 
-  teardown() {
-    if (this._ctx) {
-      this._ctx.fillStyle = '#000';
-      this._ctx.fillRect(0, 0, TRAIL_SIZE, TRAIL_SIZE);
-      this._texture.image = this._canvas;
-      this._texture.needsUpdate = true;
-    }
-    this._canvas = null;
-    this._ctx = null;
-    this._texture = null;
-    this._gl = null;
-  },
-};
+      // 3. Upload to GPU
+      _texture.image = _canvas;
+      _texture.needsUpdate = true;
+    },
+
+    teardown() {
+      if (_ctx) {
+        _ctx.fillStyle = '#000';
+        _ctx.fillRect(0, 0, TRAIL_SIZE, TRAIL_SIZE);
+        _texture.image = _canvas;
+        _texture.needsUpdate = true;
+      }
+      _canvas = null;
+      _ctx = null;
+      _texture = null;
+      _gl = null;
+    },
+  };
+}

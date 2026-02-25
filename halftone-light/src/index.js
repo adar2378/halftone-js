@@ -9,8 +9,8 @@ import {
   isVideoTexture,
   updateVideoTexture,
 } from './texture.js';
-import cometEffect from './effects/comet.js';
-import sparkleEffect from './effects/sparkle.js';
+import createCometEffect from './effects/comet.js';
+import createSparkleEffect from './effects/sparkle.js';
 
 class HalftoneLight extends EventEmitter {
   constructor(options = {}) {
@@ -253,16 +253,19 @@ class HalftoneLight extends EventEmitter {
 
   _setupEffect(name) {
     this._teardownEffect();
+    let effect;
     if (name === 'comet') {
-      const { trailTexture } = cometEffect.setup(this._gl);
+      effect = createCometEffect();
+      const { trailTexture } = effect.setup(this._gl);
       this._uniforms.uTrail.value = trailTexture;
       this._uniforms.uHasTrail.value = 1;
-      this._activeEffect = cometEffect;
+      this._activeEffect = effect;
     } else if (name === 'sparkle') {
-      const { trailTexture } = sparkleEffect.setup(this._gl, this._config);
+      effect = createSparkleEffect();
+      const { trailTexture } = effect.setup(this._gl, this._config);
       this._uniforms.uTrail.value = trailTexture;
       this._uniforms.uHasTrail.value = 1;
-      this._activeEffect = sparkleEffect;
+      this._activeEffect = effect;
     }
   }
 
