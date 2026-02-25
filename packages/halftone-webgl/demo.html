@@ -657,6 +657,13 @@
           <button id="webcamBtn">Webcam</button>
         </div>
         <div class="field" style="margin-top:8px">
+          <label>Source URL</label>
+          <div style="display:flex;gap:6px">
+            <input type="text" id="pg-sourceUrl" placeholder="https://example.com/video.mp4" style="flex:1">
+            <button id="loadUrlBtn" style="padding:6px 12px;background:#1a1a22;color:#bbb;border:1px solid #2a2a35;border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap">Load</button>
+          </div>
+        </div>
+        <div class="field" style="margin-top:8px">
           <label>Fit</label>
           <select id="pg-fit">
             <option value="cover" selected>cover</option>
@@ -894,12 +901,37 @@
     document.getElementById('fileUpload').addEventListener('change', e => {
       const file = e.target.files[0];
       if (!file) return;
-      pg.loadSource(URL.createObjectURL(file)).catch(() => {});
+      const url = URL.createObjectURL(file);
+      if (file.type.startsWith('video/')) {
+        const video = document.createElement('video');
+        video.loop = true;
+        video.muted = true;
+        video.playsInline = true;
+        video.src = url;
+        video.onloadedmetadata = async () => {
+          try { await video.play(); } catch (_) {}
+          pg.loadSource(video).catch(() => {});
+        };
+      } else {
+        pg.loadSource(url).catch(() => {});
+      }
     });
 
     // ─── Webcam ───
     document.getElementById('webcamBtn').addEventListener('click', () => {
       pg.loadSource('webcam').catch(() => {});
+    });
+
+    // ─── Source URL ───
+    document.getElementById('loadUrlBtn').addEventListener('click', () => {
+      const url = document.getElementById('pg-sourceUrl').value.trim();
+      if (url) pg.loadSource(url).catch(() => {});
+    });
+    document.getElementById('pg-sourceUrl').addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const url = e.target.value.trim();
+        if (url) pg.loadSource(url).catch(() => {});
+      }
     });
 
     // ─── Code Output ───

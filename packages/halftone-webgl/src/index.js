@@ -117,15 +117,30 @@ class HalftoneWebGL extends EventEmitter {
     }
   }
 
-  async loadSource(src) {
+  async loadSource(src, { type } = {}) {
     const gl = this._gl;
     let texture;
+
+    // Clean up previous video/webcam source
+    if (this._currentTexture && this._currentTexture._video) {
+      const video = this._currentTexture._video;
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(t => t.stop());
+        video.srcObject = null;
+      }
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+    }
+
+    const isVideoUrl = typeof src === 'string' &&
+      (/\.(mp4|webm|ogg)(\?|$)/i.test(src) || type === 'video');
 
     try {
       if (src === 'webcam') {
         texture = await loadWebcamTexture(gl);
         this._hasVideo = true;
-      } else if (typeof src === 'string' && /\.(mp4|webm|ogg)(\?|$)/i.test(src)) {
+      } else if (isVideoUrl) {
         texture = await loadVideoTexture(gl, src);
         this._hasVideo = true;
       } else if (typeof src === 'string') {
