@@ -146,8 +146,12 @@ vec4 rgbToCMYK(vec3 rgb) {
 // ─── Single-channel halftone ───
 
 float halftoneChannel(vec2 uv, float freq, float angleRad, float dotSize, int shape, float softness) {
+  // Aspect-correct UV so grid cells are square in screen space
+  vec2 aspectUV = vec2(uv.x * uContainerAspect, uv.y);
+  vec2 aspectCenter = vec2(0.5 * uContainerAspect, 0.5);
+
   // Rotate UV by screen angle
-  vec2 rotUV = rot2d(angleRad) * (uv - 0.5) + 0.5;
+  vec2 rotUV = rot2d(angleRad) * (aspectUV - aspectCenter) + aspectCenter;
 
   // Scale to grid
   vec2 gridUV = rotUV * freq;
@@ -265,11 +269,16 @@ void main() {
   float freq = uFrequency * interact.freqMul;
 
   // Compute cell info (needed for sparkle + texture sampling)
-  vec2 rotUV = rot2d(uAngle) * (gridUV - 0.5) + 0.5;
+  // Aspect-correct to match halftoneChannel grid
+  vec2 aspectUV = vec2(gridUV.x * uContainerAspect, gridUV.y);
+  vec2 aspectCenter = vec2(0.5 * uContainerAspect, 0.5);
+  vec2 rotUV = rot2d(uAngle) * (aspectUV - aspectCenter) + aspectCenter;
   vec2 cellGridUV = rotUV * freq;
   vec2 cellIdx = floor(cellGridUV);
   vec2 cellCenter = (cellIdx + 0.5) / freq;
-  vec2 cellWorldUV = rot2d(-uAngle) * (cellCenter - 0.5) + 0.5;
+  // Un-rotate, then un-aspect to get back to [0,1] UV for texture sampling
+  vec2 cellAspectUV = rot2d(-uAngle) * (cellCenter - aspectCenter) + aspectCenter;
+  vec2 cellWorldUV = vec2(cellAspectUV.x / uContainerAspect, cellAspectUV.y);
 
   // Sample source texture
   vec3 srcColor = vec3(0.0);
