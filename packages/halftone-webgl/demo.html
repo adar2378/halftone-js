@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HalftoneLight — Showcase</title>
+  <title>HalftoneWebGL — Showcase</title>
   <style>
     /* ─── Reset & Base ─── */
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -291,16 +291,16 @@
        interaction via the default pauseSelector.
        ════════════════════════════════════════════════════════════ -->
   <div class="hero-container"
-       data-hl-element
-       data-hl-source="https://picsum.photos/seed/halftone-hero/1400/900"
-       data-hl-interaction="sparkle"
-       data-hl-color-mode="auto"
-       data-hl-frequency="45"
-       data-hl-softness="0.4"
-       data-hl-radius="0.35"
-       data-hl-strength="0.6">
+       data-hwgl-element
+       data-hwgl-source="https://picsum.photos/seed/halftone-hero/1400/900"
+       data-hwgl-interaction="sparkle"
+       data-hwgl-color-mode="auto"
+       data-hwgl-frequency="45"
+       data-hwgl-softness="0.4"
+       data-hwgl-radius="0.35"
+       data-hwgl-strength="0.6">
     <div class="hero-content">
-      <h1 class="hero-title">HalftoneLight</h1>
+      <h1 class="hero-title">HalftoneWebGL</h1>
       <p class="hero-subtitle">GPU-powered halftone effects for the web. Lightweight, interactive, drop-in.</p>
       <button class="hero-cta" onclick="document.getElementById('playground').scrollIntoView({behavior:'smooth'})">Try the Playground</button>
     </div>
@@ -315,14 +315,14 @@
 
       <!-- Wide banner — 2 cols, line shape -->
       <div class="grid-cell">
-        <div data-hl-element
-             data-hl-source="https://picsum.photos/seed/halftone-banner/1200/400"
-             data-hl-shape="line"
-             data-hl-color-mode="mono"
-             data-hl-interaction="sparkle"
-             data-hl-frequency="50"
-             data-hl-color="#E85002"
-             data-hl-bg-color="#0a0a0f"
+        <div data-hwgl-element
+             data-hwgl-source="https://picsum.photos/seed/halftone-banner/1200/400"
+             data-hwgl-shape="line"
+             data-hwgl-color-mode="mono"
+             data-hwgl-interaction="sparkle"
+             data-hwgl-frequency="50"
+             data-hwgl-color="#E85002"
+             data-hwgl-bg-color="#0a0a0f"
              style="width:100%;height:100%">
         </div>
         <div class="grid-label">
@@ -334,12 +334,12 @@
 
       <!-- Tall portrait — 1 col, 2 rows, circle shape -->
       <div class="grid-cell">
-        <div data-hl-element
-             data-hl-source="https://picsum.photos/seed/halftone-portrait/600/800"
-             data-hl-shape="circle"
-             data-hl-color-mode="auto"
-             data-hl-interaction="sparkle"
-             data-hl-frequency="35"
+        <div data-hwgl-element
+             data-hwgl-source="https://picsum.photos/seed/halftone-portrait/600/800"
+             data-hwgl-shape="circle"
+             data-hwgl-color-mode="auto"
+             data-hwgl-interaction="sparkle"
+             data-hwgl-frequency="35"
              style="width:100%;height:100%">
         </div>
         <div class="grid-label">
@@ -351,12 +351,12 @@
 
       <!-- Square — diamond shape, cmyk -->
       <div class="grid-cell">
-        <div data-hl-element
-             data-hl-source="https://picsum.photos/seed/halftone-square/600/600"
-             data-hl-shape="diamond"
-             data-hl-color-mode="cmyk"
-             data-hl-interaction="sparkle"
-             data-hl-frequency="40"
+        <div data-hwgl-element
+             data-hwgl-source="https://picsum.photos/seed/halftone-square/600/600"
+             data-hwgl-shape="diamond"
+             data-hwgl-color-mode="cmyk"
+             data-hwgl-interaction="sparkle"
+             data-hwgl-frequency="40"
              style="width:100%;height:100%">
         </div>
         <div class="grid-label">
@@ -368,14 +368,14 @@
 
       <!-- Small — ellipse, duotone -->
       <div class="grid-cell">
-        <div data-hl-element
-             data-hl-source="https://picsum.photos/seed/halftone-small/400/300"
-             data-hl-shape="ellipse"
-             data-hl-color-mode="duotone"
-             data-hl-color="#6B5CE7"
-             data-hl-color-b="#E85002"
-             data-hl-interaction="sparkle"
-             data-hl-frequency="35"
+        <div data-hwgl-element
+             data-hwgl-source="https://picsum.photos/seed/halftone-small/400/300"
+             data-hwgl-shape="ellipse"
+             data-hwgl-color-mode="duotone"
+             data-hwgl-color="#6B5CE7"
+             data-hwgl-color-b="#E85002"
+             data-hwgl-interaction="sparkle"
+             data-hwgl-frequency="35"
              style="width:100%;height:100%">
         </div>
         <div class="grid-label">
@@ -394,14 +394,14 @@
   <div class="section">
     <div class="section-title">Light Background</div>
     <div class="light-container"
-         data-hl-element
-         data-hl-source="https://picsum.photos/seed/halftone-light-bg/1200/600"
-         data-hl-interaction="sparkle"
-         data-hl-color-mode="auto"
-         data-hl-frequency="40"
-         data-hl-bg-color="#ffffff"
-         data-hl-softness="0.5"
-         data-hl-strength="0.6"
+         data-hwgl-element
+         data-hwgl-source="https://picsum.photos/seed/halftone-webgl-bg/1200/600"
+         data-hwgl-interaction="sparkle"
+         data-hwgl-color-mode="auto"
+         data-hwgl-frequency="40"
+         data-hwgl-bg-color="#ffffff"
+         data-hwgl-softness="0.5"
+         data-hwgl-strength="0.6"
          style="height:360px;border-radius:12px;overflow:hidden">
       <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100%;text-align:center;gap:12px;padding:32px">
         <h2 style="font-size:32px;font-weight:700;color:#111;letter-spacing:-1px">Works on light backgrounds too</h2>
@@ -422,13 +422,13 @@
 
       <!-- Card A -->
       <div class="card-container"
-           data-hl-element
-           data-hl-source="https://picsum.photos/seed/halftone-card-a/800/600"
-           data-hl-interaction="sparkle"
-           data-hl-color-mode="auto"
-           data-hl-frequency="40"
-           data-hl-softness="0.6"
-           data-hl-radius="0.3">
+           data-hwgl-element
+           data-hwgl-source="https://picsum.photos/seed/halftone-card-a/800/600"
+           data-hwgl-interaction="sparkle"
+           data-hwgl-color-mode="auto"
+           data-hwgl-frequency="40"
+           data-hwgl-softness="0.6"
+           data-hwgl-radius="0.3">
         <div class="card-content">
           <h3>Interactive Backgrounds</h3>
           <p>Layer text and buttons over halftone effects. Text is selectable, buttons are clickable — just like a background image.</p>
@@ -438,15 +438,15 @@
 
       <!-- Card B -->
       <div class="card-container"
-           data-hl-element
-           data-hl-source="https://picsum.photos/seed/halftone-card-b/800/600"
-           data-hl-interaction="sparkle"
-           data-hl-shape="cross"
-           data-hl-color-mode="mono"
-           data-hl-color="#00D4AA"
-           data-hl-bg-color="#0a0a0f"
-           data-hl-frequency="45"
-           data-hl-radius="0.25">
+           data-hwgl-element
+           data-hwgl-source="https://picsum.photos/seed/halftone-card-b/800/600"
+           data-hwgl-interaction="sparkle"
+           data-hwgl-shape="cross"
+           data-hwgl-color-mode="mono"
+           data-hwgl-color="#00D4AA"
+           data-hwgl-bg-color="#0a0a0f"
+           data-hwgl-frequency="45"
+           data-hwgl-radius="0.25">
         <div class="card-content">
           <h3>Works Like a BG Image</h3>
           <p>Content is a child of the halftone container. The canvas is <code style="color:#00D4AA">position: absolute; pointer-events: none</code> — content sits on top naturally.</p>
@@ -546,14 +546,14 @@
   </div>
 
   <footer style="text-align:center;padding:40px 16px;color:#333;font-size:12px;">
-    HalftoneLight — GPU halftone effects &middot; &lt;21 KB gzipped
+    HalftoneWebGL — GPU halftone effects &middot; &lt;21 KB gzipped
   </footer>
 
   <!-- ─── Scripts ─── -->
-  <script src="dist/halftone-light.min.js"></script>
+  <script src="dist/halftone-webgl.min.js"></script>
   <script>
     // ─── Playground Instance (JS API) ───
-    const pg = new HalftoneLight({
+    const pg = new HalftoneWebGL({
       container: '#pg-canvas',
       source: 'https://picsum.photos/seed/halftone-playground/1200/800',
       interaction: 'sparkle',

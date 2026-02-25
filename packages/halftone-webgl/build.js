@@ -20,16 +20,16 @@ async function build() {
     {
       ...shared,
       format: 'esm',
-      outfile: 'dist/halftone-light.esm.js',
+      outfile: 'dist/halftone-webgl.esm.js',
     },
     // IIFE for CDN / Webflow
     {
       ...shared,
       format: 'iife',
-      globalName: 'HalftoneLightModule',
-      outfile: 'dist/halftone-light.min.js',
+      globalName: 'HalftoneWebGLModule',
+      outfile: 'dist/halftone-webgl.min.js',
       footer: {
-        js: '// HalftoneLight auto-inits via data-hl-element attributes',
+        js: '// HalftoneWebGL auto-inits via data-hwgl-element attributes',
       },
     },
   ];
@@ -42,7 +42,7 @@ async function build() {
     console.log('Watching for changes...');
   } else {
     await Promise.all(configs.map(c => esbuild.build(c)));
-    console.log('Build complete: dist/halftone-light.esm.js, dist/halftone-light.min.js');
+    console.log('Build complete: dist/halftone-webgl.esm.js, dist/halftone-webgl.min.js');
   }
 }
 

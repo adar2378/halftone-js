@@ -42,7 +42,7 @@ export const DEFAULTS = {
   dpr: 'auto',
   zIndex: 0,
   // Overlay
-  pauseSelector: 'a, button, [data-hl-pause]',
+  pauseSelector: 'a, button, [data-hwgl-pause]',
 };
 
 export function clamp(v, min, max) {

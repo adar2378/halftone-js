@@ -12,7 +12,7 @@ import {
 import createCometEffect from './effects/comet.js';
 import createSparkleEffect from './effects/sparkle.js';
 
-class HalftoneLight extends EventEmitter {
+class HalftoneWebGL extends EventEmitter {
   constructor(options = {}) {
     super();
 
@@ -21,7 +21,7 @@ class HalftoneLight extends EventEmitter {
       ? document.querySelector(options.container)
       : options.container;
 
-    if (!container) throw new Error('[HalftoneLight] Container not found');
+    if (!container) throw new Error('[HalftoneWebGL] Container not found');
 
     this.container = container;
 
@@ -90,7 +90,7 @@ class HalftoneLight extends EventEmitter {
     this._updatePlayState();
 
     // Expose instance on element for Webflow access
-    container.__halftoneLight = this;
+    container.__halftoneWebGL = this;
   }
 
   // ─── Public Properties ───
@@ -245,7 +245,7 @@ class HalftoneLight extends EventEmitter {
     // Clean up OGL
     this._renderer.gl.getExtension('WEBGL_lose_context')?.loseContext();
 
-    delete this.container.__halftoneLight;
+    delete this.container.__halftoneWebGL;
     super.destroy();
   }
 
@@ -338,7 +338,7 @@ class HalftoneLight extends EventEmitter {
       return;
     }
 
-    // Check if hovering a "pause" element (button, link, [data-hl-pause])
+    // Check if hovering a "pause" element (button, link, [data-hwgl-pause])
     const sel = this._config.pauseSelector;
     if (sel && e.target.closest(sel)) {
       this._mouseActiveTarget = 0;
@@ -445,18 +445,18 @@ class HalftoneLight extends EventEmitter {
 // ─── Auto-init ───
 
 function autoInit() {
-  document.querySelectorAll('[data-hl-element]').forEach(el => {
-    if (el.__halftoneLight) return;
+  document.querySelectorAll('[data-hwgl-element]').forEach(el => {
+    if (el.__halftoneWebGL) return;
     try {
-      new HalftoneLight({ container: el });
+      new HalftoneWebGL({ container: el });
     } catch (e) {
-      console.warn('[HalftoneLight] Auto-init failed:', e.message);
+      console.warn('[HalftoneWebGL] Auto-init failed:', e.message);
     }
   });
 }
 
 if (typeof window !== 'undefined') {
-  window.HalftoneLight = HalftoneLight;
+  window.HalftoneWebGL = HalftoneWebGL;
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', autoInit);
   } else {
@@ -464,4 +464,4 @@ if (typeof window !== 'undefined') {
   }
 }
 
-export default HalftoneLight;
+export default HalftoneWebGL;
