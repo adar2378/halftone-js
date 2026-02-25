@@ -70,12 +70,12 @@ vec2 fitUV(vec2 uv) {
   if (uFit == 2) return uv; // fill — direct mapping
   float ratio = uContainerAspect / uSourceAspect;
   vec2 st = uv - 0.5;
-  if (uFit == 0) { // cover
-    if (ratio > 1.0) st.y *= ratio;
-    else st.x /= ratio;
-  } else { // contain
-    if (ratio > 1.0) st.x /= ratio;
-    else st.y *= ratio;
+  if (uFit == 0) { // cover — fill container, crop overflow
+    if (ratio > 1.0) st.y /= ratio;
+    else st.x *= ratio;
+  } else { // contain — fit source, letterbox
+    if (ratio > 1.0) st.x *= ratio;
+    else st.y /= ratio;
   }
   return st + 0.5;
 }
