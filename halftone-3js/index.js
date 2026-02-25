@@ -4,6 +4,38 @@ import * as THREE from 'three';
  * Halftone3D - High performance, GPU-accelerated halftone interaction layer.
  */
 export default class Halftone3D {
+    static _loader = new THREE.TextureLoader();
+    static _instances = new Set();
+    static _raf = null;
+
+    static _clientX = 0;
+    static _clientY = 0;
+    static _mouseInited = false;
+    static _initMouse() {
+        if (Halftone3D._mouseInited) return;
+        Halftone3D._mouseInited = true;
+        window.addEventListener('mousemove', (e) => {
+            Halftone3D._clientX = e.clientX;
+            Halftone3D._clientY = e.clientY;
+        }, { passive: true });
+    }
+
+    static _tick() {
+        Halftone3D._raf = requestAnimationFrame(Halftone3D._tick);
+        for (const inst of Halftone3D._instances) inst._update();
+    }
+    static _startLoop() {
+        if (Halftone3D._raf === null && Halftone3D._instances.size > 0) {
+            Halftone3D._raf = requestAnimationFrame(Halftone3D._tick);
+        }
+    }
+    static _stopLoop() {
+        if (Halftone3D._instances.size === 0 && Halftone3D._raf !== null) {
+            cancelAnimationFrame(Halftone3D._raf);
+            Halftone3D._raf = null;
+        }
+    }
+
     static defaults = {
         grid: 60,
         gap: 0,
@@ -28,6 +60,7 @@ export default class Halftone3D {
 
         if (!this.container) throw new Error('Halftone3D: Container not found');
 
+        // State
         this.width = this.container.clientWidth;
         this.height = this.container.clientHeight;
         this.mouse = new THREE.Vector2(0, 0);
@@ -36,20 +69,76 @@ export default class Halftone3D {
         this.mouseActive = 0;
         this.time = 0;
         this._init = false;
+        this._isVisible = false;
+        this._isResizing = false;
+        this._needsRender = true;
+        this._isVideoSource = false;
 
+        Halftone3D._initMouse();
+        this._cachedRect = null;
         this._setupScene();
         this._setupTrail();
         this._setupEvents();
+        this._setupObservers();
         this._setupGrid();
         
         if (this.config.source) this.loadSource(this.config.source);
-        
+
         this._init = true;
-        this.animate();
+        Halftone3D._instances.add(this);
+        Halftone3D._startLoop();
+    }
+
+    _setupObservers() {
+        // Visibility Observer
+        this._visibilityObserver = new IntersectionObserver((entries) => {
+            this._isVisible = entries[0].isIntersecting;
+        }, { threshold: 0.01 });
+        this._visibilityObserver.observe(this.container);
+
+        // Resize Observer (The CPU Fix)
+        // This provides dimensions WITHOUT forcing layout reflow
+        this._resizeObserver = new ResizeObserver((entries) => {
+            const entry = entries[0];
+            const w = entry.contentRect.width;
+            const h = entry.contentRect.height;
+            if (w === 0 || h === 0) return;
+            
+            this._handleResize(w, h);
+        });
+        this._resizeObserver.observe(this.container);
+    }
+
+    _handleResize(w, h) {
+        this.width = w;
+        this.height = h;
+        this._isResizing = true;
+        this._cachedRect = this.container.getBoundingClientRect();
+
+        const aspect = w / h;
+        this.camera.left = -1;
+        this.camera.right = 1;
+        this.camera.top = 1/aspect;
+        this.camera.bottom = -1/aspect;
+        this.camera.updateProjectionMatrix();
+        
+        this.renderer.setSize(w, h, false);
+        if (this.uniforms) this.uniforms.uContainerAspect.value = aspect;
+
+        // Debounce + stagger grid rebuilds across instances to avoid CPU spike
+        clearTimeout(this._resizeTimer);
+        const idx = Array.from(Halftone3D._instances).indexOf(this);
+        const stagger = idx * 50;
+        this._resizeTimer = setTimeout(() => {
+            if (this._init) this._setupGrid();
+            this._isResizing = false;
+            this._needsRender = true;
+        }, 150 + stagger);
     }
 
     updateConfig(key, value) {
         this.config[key] = value;
+        this._needsRender = true;
         if (!this._init) return;
 
         if (['grid', 'shape', 'gap'].includes(key)) {
@@ -74,6 +163,22 @@ export default class Halftone3D {
         }
     }
 
+    _disposeCurrentTexture() {
+        const tex = this.uniforms?.uTexture?.value;
+        if (!tex || tex === this.defaultTexture) return;
+        // Stop video / webcam stream
+        const img = tex.image;
+        if (img instanceof HTMLVideoElement) {
+            img.pause();
+            img.removeAttribute('src');
+            if (img.srcObject) {
+                img.srcObject.getTracks().forEach(t => t.stop());
+                img.srcObject = null;
+            }
+        }
+        tex.dispose();
+    }
+
     async loadSource(src) {
         if (!src) return;
         if (src === 'webcam') return this._setupWebcam();
@@ -88,16 +193,23 @@ export default class Halftone3D {
                     if (this.uniforms) this.uniforms.uSourceAspect.value = this.sourceAspect;
                 };
                 await video.play();
+                this._disposeCurrentTexture();
+                this._isVideoSource = true;
+                this._needsRender = true;
                 this.uniforms.uTexture.value = new THREE.VideoTexture(video);
             } catch (e) { this._loadImage(src); }
         } else { this._loadImage(src); }
     }
 
     _loadImage(src) {
-        new THREE.TextureLoader().load(src, (tex) => {
+        Halftone3D._loader.load(src, (tex) => {
             tex.minFilter = THREE.LinearFilter;
+            tex.generateMipmaps = false;
             this.sourceAspect = tex.image.width / tex.image.height;
             if (this.uniforms) this.uniforms.uSourceAspect.value = this.sourceAspect;
+            this._disposeCurrentTexture();
+            this._isVideoSource = false;
+            this._needsRender = true;
             this.uniforms.uTexture.value = tex;
         });
     }
@@ -108,7 +220,7 @@ export default class Halftone3D {
         const aspect = this.width / this.height;
         this.camera = new THREE.OrthographicCamera(-1, 1, 1/aspect, -1/aspect, 0.1, 1000);
         this.camera.position.z = 5;
-        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'default' });
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         this.renderer.setSize(this.width, this.height);
         this.renderer.domElement.style.position = 'absolute';
@@ -122,34 +234,25 @@ export default class Halftone3D {
         this.container.style.overflow = 'hidden';
         this.container.appendChild(this.renderer.domElement);
         this.defaultTexture = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1, THREE.RGBAFormat);
+        this.defaultTexture.generateMipmaps = false;
         this.defaultTexture.needsUpdate = true;
     }
 
     _setupTrail() {
-        // Create a small canvas to draw the mouse trail into
         this.trailCanvas = document.createElement('canvas');
-        this.trailCanvas.width = this.trailCanvas.height = 128; // Small but enough for smooth trails
+        this.trailCanvas.width = this.trailCanvas.height = 128;
         this.trailCtx = this.trailCanvas.getContext('2d');
         this.trailTexture = new THREE.CanvasTexture(this.trailCanvas);
+        this.trailTexture.generateMipmaps = false;
     }
 
     _updateTrail() {
-        if (!this.trailCtx) return;
-        
-        // 1. Fade existing trail
-        this.trailCtx.fillStyle = 'rgba(0,0,0,0.05)'; // Adjust this for tail length
+        if (!this.trailCtx || !this._isVisible) return;
+        this.trailCtx.fillStyle = 'rgba(0,0,0,0.05)';
         this.trailCtx.fillRect(0, 0, 128, 128);
-
-        if (this._isMouseOver) {
-            // 2. Map normalized mouse (-1 to 1) to canvas (0 to 128)
-            const x = (this.mouse.x + 1) * 64;
-            const y = (1 - (this.mouse.y * (this.width / this.height))) * 64; // Approximate map
-            
-            // Actually, let's use a simpler mapping
-            const rect = this.container.getBoundingClientRect();
-            // We'll update this in onMouseMove for accuracy
+        if (this.mouseActive > 0.01) {
+            this.trailTexture.needsUpdate = true;
         }
-        this.trailTexture.needsUpdate = true;
     }
 
     _setupGrid() {
@@ -192,11 +295,12 @@ export default class Halftone3D {
     }
 
     _getGeometry() {
-        switch(this.config.shape) {
+        const type = this.config.shape;
+        switch(type) {
             case 'square': return new THREE.PlaneGeometry(1, 1);
             case 'diamond': return new THREE.PlaneGeometry(1, 1);
             case 'triangle': return new THREE.CircleGeometry(0.5, 3);
-            default: return new THREE.CircleGeometry(0.5, 32);
+            default: return new THREE.CircleGeometry(0.5, 16);
         }
     }
 
@@ -263,26 +367,20 @@ export default class Halftone3D {
                 vec2 correctedUV = getFitUV(instanceUV, uContainerAspect, uSourceAspect, uFit);
                 vec4 texColor = texture2D(uTexture, correctedUV);
                 vColor = texColor.rgb;
-                
-                // Sample Trail Map
                 float heat = texture2D(uTrail, instanceUV).r;
-
                 bool oob = (uFit == 2) && (correctedUV.x < 0.0 || correctedUV.x > 1.0 || correctedUV.y < 0.0 || correctedUV.y > 1.0);
                 float luma = oob ? 0.0 : dot(vColor, vec3(0.299, 0.587, 0.114));
                 float baseScale = pow(clamp(luma * uBrightness, 0.0, 1.0), uContrast);
-                
                 float d = distance(instancePos.xy, uMouse);
                 vec2 disp = vec2(0.0);
                 float interactScale = 1.0;
 
-                if (uInteraction == 5) { // Fireball / Comet Physics
+                if (uInteraction == 5) { // Fireball
                     float speed = length(uVelocity);
                     float f = heat * uStrength;
-                    vec2 dir = normalize(instancePos.xy - uMouse + 0.001); 
-                    disp = (uVelocity * f * 2.0) + (dir * f * 0.05);
+                    disp = (uVelocity * f * 2.0) + (normalize(instancePos.xy - uMouse + 0.001) * f * 0.05);
                     interactScale = 1.0 + (f * 1.5 * (1.0 + speed * 8.0));
-                    float jitter = hash(instancePos.xy + uTime) - 0.5;
-                    disp += jitter * f * 0.005; 
+                    disp += (hash(instancePos.xy + uTime) - 0.5) * f * 0.005; 
                 } else if (d < uRadius) {
                     float f = (1.0 - d / uRadius) * uStrength * uMouseActive;
                     vec2 dir = normalize(instancePos.xy - uMouse);
@@ -323,89 +421,87 @@ export default class Halftone3D {
                 this.sourceAspect = video.videoWidth / video.videoHeight;
                 if (this.uniforms) this.uniforms.uSourceAspect.value = this.sourceAspect;
             };
+            this._disposeCurrentTexture();
+            this._isVideoSource = true;
+            this._needsRender = true;
             this.uniforms.uTexture.value = new THREE.VideoTexture(video);
         });
     }
 
     _setupEvents() {
-        this._resizeHandler = this.onResize.bind(this);
-        this._mouseHandler = (e) => {
-            const r = this.container.getBoundingClientRect();
-            const nx = ((e.clientX - r.left) / r.width) * 2 - 1;
-            const ny = -(((e.clientY - r.top) / r.height) * (2/(this.width/this.height)) - (1/(this.width/this.height))); 
-            
-            // Draw into Trail Map
-            if (this.trailCtx) {
-                const tx = ((e.clientX - r.left) / r.width) * 128;
-                const ty = ((e.clientY - r.top) / r.height) * 128;
-                const speed = Math.min(length(this.velocity) * 100, 20);
-                this.trailCtx.beginPath();
-                this.trailCtx.arc(tx, ty, 8 + speed, 0, Math.PI*2);
-                this.trailCtx.fillStyle = 'white';
-                this.trailCtx.fill();
-            }
-
-            this.mouse.set(nx, ny);
-            this._isMouseOver = true;
-        };
         this._leaveHandler = () => this._isMouseOver = false;
-        this._enterHandler = () => this._isMouseOver = true;
-
-        window.addEventListener('resize', this._resizeHandler);
-        window.addEventListener('mousemove', this._mouseHandler);
+        this._enterHandler = () => {
+            this._isMouseOver = true;
+            // Refresh cached rect on enter in case of scroll/layout shift
+            this._cachedRect = this.container.getBoundingClientRect();
+        };
         this.container.addEventListener('mouseenter', this._enterHandler);
         this.container.addEventListener('mouseleave', this._leaveHandler);
     }
 
-    onResize() {
-        this.width = this.container.clientWidth;
-        this.height = this.container.clientHeight;
+    _updateMouseFromGlobal() {
+        if (!this._isMouseOver || !this._cachedRect) return;
+        const r = this._cachedRect;
+        const cx = Halftone3D._clientX;
+        const cy = Halftone3D._clientY;
+        const nx = ((cx - r.left) / r.width) * 2 - 1;
         const aspect = this.width / this.height;
-        this.camera.left = -1; this.camera.right = 1;
-        this.camera.top = 1/aspect; this.camera.bottom = -1/aspect;
-        this.camera.updateProjectionMatrix();
-        this.renderer.setSize(this.width, this.height, false);
-        if (this.uniforms) this.uniforms.uContainerAspect.value = aspect;
-        clearTimeout(this._resizeTimer);
-        this._resizeTimer = setTimeout(() => { if (this._init) this._setupGrid(); }, 100); 
+        const ny = -(((cy - r.top) / r.height) * (2/aspect) - (1/aspect));
+        if (this.trailCtx && this._isVisible) {
+            const tx = ((cx - r.left) / r.width) * 128;
+            const ty = ((cy - r.top) / r.height) * 128;
+            this.trailCtx.beginPath();
+            this.trailCtx.arc(tx, ty, 12, 0, Math.PI*2);
+            this.trailCtx.fillStyle = 'white';
+            this.trailCtx.fill();
+        }
+        this.mouse.set(nx, ny);
     }
 
-    animate() {
-        this._raf = requestAnimationFrame(this.animate.bind(this));
+    _update() {
+        if (!this._isVisible || this._isResizing) return;
+
+        this._updateMouseFromGlobal();
         this.time += 0.05;
-        
         if (this.uniforms) {
             this.uniforms.uTime.value = this.time;
             this.uniforms.uMouse.value.lerp(this.mouse, 0.1);
-            
-            // Smooth velocity (The culprit for the shaking)
             this.velocity.subVectors(this.mouse, this.prevMouse);
-            this.uniforms.uVelocity.value.lerp(this.velocity, 0.05); // Very smooth lerp
+            this.uniforms.uVelocity.value.lerp(this.velocity, 0.05);
             this.prevMouse.copy(this.mouse);
-            
             const targetActive = this._isMouseOver ? 1.0 : 0.0;
             this.mouseActive += (targetActive - this.mouseActive) * 0.1;
             this.uniforms.uMouseActive.value = this.mouseActive;
-            
             this._updateTrail();
         }
+
+        // Skip render for static content with no interaction
+        const isStatic = !this._isVideoSource && this.config.interaction === 'none';
+        if (isStatic && !this._needsRender && this.mouseActive < 0.01) return;
+
         this.renderer.render(this.scene, this.camera);
+        if (isStatic) this._needsRender = false;
     }
 
     destroy() {
-        cancelAnimationFrame(this._raf);
-        window.removeEventListener('resize', this._resizeHandler);
-        window.removeEventListener('mousemove', this._mouseHandler);
+        Halftone3D._instances.delete(this);
+        Halftone3D._stopLoop();
+        clearTimeout(this._resizeTimer);
+        this._visibilityObserver.disconnect();
+        this._resizeObserver.disconnect();
         this.container.removeEventListener('mouseenter', this._enterHandler);
         this.container.removeEventListener('mouseleave', this._leaveHandler);
+        this._disposeCurrentTexture();
+        if (this.trailTexture) this.trailTexture.dispose();
+        if (this.defaultTexture) this.defaultTexture.dispose();
         this.renderer.dispose();
-        this.mesh.geometry.dispose();
-        this.mesh.material.dispose();
+        if (this.mesh) {
+            this.mesh.geometry.dispose();
+            this.mesh.material.dispose();
+        }
         this.container.removeChild(this.renderer.domElement);
     }
 }
-
-function length(v) { return Math.sqrt(v.x*v.x + v.y*v.y); }
 
 if (typeof window !== 'undefined') {
     window.Halftone3D = Halftone3D;
