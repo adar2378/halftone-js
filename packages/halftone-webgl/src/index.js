@@ -40,6 +40,8 @@ class HalftoneWebGL extends EventEmitter {
     this._needsRender = true;
     this._hasVideo = false;
     this._hasInteraction = this._config.interaction !== 'none';
+    this._fadeTarget = 0;
+    this._fadeCurrent = 0;
     this._destroyed = false;
     this._prevMouse = [0, 0];
     this._velocity = [0, 0];
@@ -170,11 +172,13 @@ class HalftoneWebGL extends EventEmitter {
       }
 
       this._needsRender = true;
+      this._fadeTarget = 1;
       this._updatePlayState();
       this.emit('sourceload');
 
+      // Kick a temporary fade loop if not already animating
       if (!this._isPlaying) {
-        this._renderOnce();
+        this._runFade();
       }
 
       // Emit ready on first load
@@ -424,6 +428,12 @@ class HalftoneWebGL extends EventEmitter {
       });
     }
 
+    // Fade-in
+    if (this._fadeCurrent < this._fadeTarget) {
+      this._fadeCurrent = Math.min(this._fadeCurrent + 0.02, 1);
+      this._uniforms.uFadeIn.value = this._fadeCurrent;
+    }
+
     // Update video texture
     if (this._hasVideo && this._currentTexture) {
       updateVideoTexture(this._currentTexture);
@@ -431,21 +441,33 @@ class HalftoneWebGL extends EventEmitter {
 
     this._render();
 
-    // Smart rAF: stop if static + no interaction active
-    if (!this._hasVideo && !this._hasInteraction && this._mouseActiveCurrent < 0.01) {
+    const fading = this._fadeCurrent < this._fadeTarget;
+
+    // Smart rAF: stop if static + no interaction active + fade done
+    if (!this._hasVideo && !this._hasInteraction && this._mouseActiveCurrent < 0.01 && !fading) {
       this._isPlaying = false;
       this._raf = null;
       return;
     }
 
-    // Also stop if interaction is fading and mouse is out
-    if (!this._hasVideo && this._mouseActiveTarget === 0 && this._mouseActiveCurrent < 0.005) {
+    // Also stop if interaction is fading and mouse is out + fade done
+    if (!this._hasVideo && this._mouseActiveTarget === 0 && this._mouseActiveCurrent < 0.005 && !fading) {
       this._isPlaying = false;
       this._raf = null;
       return;
     }
 
     this._raf = requestAnimationFrame(this._loop);
+  }
+
+  _runFade() {
+    if (this._destroyed || this._isPlaying) return;
+    this._fadeCurrent = Math.min(this._fadeCurrent + 0.02, 1);
+    this._uniforms.uFadeIn.value = this._fadeCurrent;
+    this._render();
+    if (this._fadeCurrent < 1) {
+      requestAnimationFrame(() => this._runFade());
+    }
   }
 
   _render() {

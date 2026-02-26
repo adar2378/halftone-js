@@ -42,6 +42,9 @@ uniform float uRadius;
 uniform float uStrength;
 uniform float uTime;
 
+// Fade-in
+uniform float uFadeIn;
+
 // Trail (comet effect)
 uniform sampler2D uTrail;
 uniform vec2 uVelocity;
@@ -282,12 +285,13 @@ void main() {
 
   // Sample source texture
   vec3 srcColor = vec3(0.0);
-  float srcLuma = 0.5;
+  float srcLuma = 0.0;
 
   if (uHasTexture > 0.5) {
     vec2 cellTexUV = fitUV(cellWorldUV);
     srcColor = texture2D(uTexture, clamp(cellTexUV, 0.0, 1.0)).rgb;
-    srcLuma = luminance(srcColor);
+    srcLuma = luminance(srcColor) * uFadeIn;
+    srcColor *= uFadeIn;
   }
 
   float dotSize = toneCurve(srcLuma) * interact.sizeMul;
