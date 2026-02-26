@@ -1,6 +1,6 @@
 {
   "name": "halftone-webgl",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "GPU-accelerated halftone effect with WebGL — lightweight, Webflow-friendly",
   "author": "adar2378",
   "license": "MIT",
