@@ -36,7 +36,7 @@ export default function createSparkleEffect() {
     },
 
     update(state) {
-      const { mouse, mouseActive, velocity } = state;
+      const { mouse, mouseActive, velocity, aspect, radius } = state;
 
       // 1. Fade the trail canvas
       _ctx.fillStyle = `rgba(0,0,0,${_fadeAlpha})`;
@@ -47,15 +47,23 @@ export default function createSparkleEffect() {
       if (mouseActive > 0.1 && speed > 0.0005) {
         const x = mouse[0] * TRAIL_SIZE;
         const y = (1.0 - mouse[1]) * TRAIL_SIZE;
+        const a = aspect || 1;
+        const r = BRUSH_RADIUS * ((radius || 0.3) / 0.3);
 
-        const gradient = _ctx.createRadialGradient(x, y, 0, x, y, BRUSH_RADIUS);
+        // Aspect-correct: scale X by 1/aspect so the brush appears circular on screen
+        _ctx.save();
+        _ctx.translate(x, y);
+        _ctx.scale(1 / a, 1);
+
+        const gradient = _ctx.createRadialGradient(0, 0, 0, 0, 0, r);
         gradient.addColorStop(0, `rgba(255,255,255,${mouseActive * 0.8})`);
         gradient.addColorStop(1, 'rgba(255,255,255,0)');
 
         _ctx.fillStyle = gradient;
         _ctx.beginPath();
-        _ctx.arc(x, y, BRUSH_RADIUS, 0, Math.PI * 2);
+        _ctx.arc(0, 0, r, 0, Math.PI * 2);
         _ctx.fill();
+        _ctx.restore();
       }
 
       // 3. Upload to GPU

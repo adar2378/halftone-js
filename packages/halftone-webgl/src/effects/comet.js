@@ -31,7 +31,7 @@ export default function createCometEffect() {
     },
 
     update(state) {
-      const { mouse, mouseActive, velocity } = state;
+      const { mouse, mouseActive, velocity, aspect, radius } = state;
 
       // 1. Fade the trail canvas
       _ctx.fillStyle = `rgba(0,0,0,${FADE_ALPHA})`;
@@ -42,16 +42,24 @@ export default function createCometEffect() {
         const x = mouse[0] * TRAIL_SIZE;
         const y = (1.0 - mouse[1]) * TRAIL_SIZE;
         const speed = Math.sqrt(velocity[0] * velocity[0] + velocity[1] * velocity[1]);
-        const radius = 12 + speed * 3;
+        const rScale = (radius || 0.3) / 0.3;
+        const r = (12 + speed * 3) * rScale;
+        const a = aspect || 1;
 
-        const gradient = _ctx.createRadialGradient(x, y, 0, x, y, radius);
+        // Aspect-correct: scale X by 1/aspect so the brush appears circular on screen
+        _ctx.save();
+        _ctx.translate(x, y);
+        _ctx.scale(1 / a, 1);
+
+        const gradient = _ctx.createRadialGradient(0, 0, 0, 0, 0, r);
         gradient.addColorStop(0, `rgba(255,255,255,${mouseActive})`);
         gradient.addColorStop(1, 'rgba(255,255,255,0)');
 
         _ctx.fillStyle = gradient;
         _ctx.beginPath();
-        _ctx.arc(x, y, radius, 0, Math.PI * 2);
+        _ctx.arc(0, 0, r, 0, Math.PI * 2);
         _ctx.fill();
+        _ctx.restore();
       }
 
       // 3. Upload to GPU

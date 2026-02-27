@@ -425,6 +425,8 @@ class HalftoneWebGL extends EventEmitter {
         mouseActive: this._mouseActiveCurrent,
         velocity: this._velocity,
         time: this._time,
+        aspect: this._uniforms.uContainerAspect.value,
+        radius: this._config.radius,
       });
     }
 
